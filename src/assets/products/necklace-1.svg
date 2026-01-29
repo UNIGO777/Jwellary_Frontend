@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eff6ff"/>
+      <stop offset="0.55" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ecfeff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="900" rx="56" fill="url(#bg)"/>
+  <rect width="1200" height="900" rx="56" fill="url(#glow)"/>
+  <g transform="translate(0 10)">
+    <path d="M300 260c40-70 135-120 300-120s260 50 300 120" fill="none" stroke="#a1a1aa" stroke-width="20" stroke-linecap="round"/>
+    <path d="M330 300c55-75 150-120 270-120s215 45 270 120" fill="none" stroke="#d4d4d8" stroke-width="16" stroke-linecap="round"/>
+    <path d="M600 410c-28 0-50 22-50 50s22 50 50 50 50-22 50-50-22-50-50-50Z" fill="#ffffff" stroke="#0ea5e9" stroke-width="12"/>
+    <path d="M600 450l26 22-26 22-26-22 26-22Z" fill="#cffafe" stroke="#0891b2" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M600 510c0 65-45 115-110 120" fill="none" stroke="#d4d4d8" stroke-width="16" stroke-linecap="round"/>
+    <path d="M600 510c0 65 45 115 110 120" fill="none" stroke="#a1a1aa" stroke-width="20" stroke-linecap="round"/>
+  </g>
+  <g opacity="0.75">
+    <text x="70" y="110" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto" font-size="36" fill="#18181b" font-weight="700">Dummy Jewellery Photo</text>
+    <text x="70" y="155" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto" font-size="20" fill="#52525b" font-weight="600">Necklace • Placeholder SVG</text>
+  </g>
+</svg>

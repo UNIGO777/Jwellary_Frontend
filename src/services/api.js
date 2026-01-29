@@ -6,6 +6,17 @@ const joinUrl = (baseUrl, path) => {
   return `${base}${p}`
 }
 
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5660'
+
+export const resolveAssetUrl = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw)) return raw
+  if (raw.startsWith('data:') || raw.startsWith('blob:')) return raw
+  const normalized = raw.startsWith('/') ? raw : raw.includes('/') ? `/${raw}` : `/uploads/${raw}`
+  return joinUrl(API_BASE_URL, normalized)
+}
+
 const readJson = async (res) => {
   const text = await res.text()
   if (!text) return null
@@ -38,7 +49,7 @@ export const tokenStore = {
 }
 
 export const createApiClient = ({ baseUrl } = {}) => {
-  const resolvedBaseUrl = baseUrl ?? import.meta.env.VITE_API_URL ?? ''
+  const resolvedBaseUrl = baseUrl ?? API_BASE_URL
 
   const request = async (method, path, { body, headers } = {}) => {
     const url = joinUrl(resolvedBaseUrl, path)

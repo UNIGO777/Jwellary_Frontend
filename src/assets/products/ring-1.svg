@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff7ed"/>
+      <stop offset="0.5" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffe4e6"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#f59e0b" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#f59e0b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="900" rx="56" fill="url(#bg)"/>
+  <rect width="1200" height="900" rx="56" fill="url(#glow)"/>
+  <g transform="translate(0 10)">
+    <path d="M600 180c-110 0-200 90-200 200s90 200 200 200 200-90 200-200-90-200-200-200Z" fill="#ffffff" opacity="0.9"/>
+    <path d="M600 240c-77.3 0-140 62.7-140 140s62.7 140 140 140 140-62.7 140-140-62.7-140-140-140Z" fill="#fbf7f3"/>
+    <path d="M600 220c-88.4 0-160 71.6-160 160s71.6 160 160 160 160-71.6 160-160-71.6-160-160-160Z" fill="none" stroke="#a1a1aa" stroke-width="22" opacity="0.75"/>
+    <path d="M600 250c-71.8 0-130 58.2-130 130s58.2 130 130 130 130-58.2 130-130-58.2-130-130-130Z" fill="none" stroke="#d4d4d8" stroke-width="18"/>
+    <g transform="translate(0 -5)">
+      <path d="M600 140l52 44-52 44-52-44 52-44Z" fill="#fde68a" stroke="#a16207" stroke-width="10" stroke-linejoin="round"/>
+      <path d="M600 166l21 18-21 18-21-18 21-18Z" fill="#fff7ed" opacity="0.9"/>
+      <path d="M548 184h104" stroke="#a16207" stroke-width="10" stroke-linecap="round" opacity="0.7"/>
+    </g>
+  </g>
+  <g opacity="0.75">
+    <text x="70" y="110" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto" font-size="36" fill="#18181b" font-weight="700">Dummy Jewellery Photo</text>
+    <text x="70" y="155" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto" font-size="20" fill="#52525b" font-weight="600">Ring • Placeholder SVG</text>
+  </g>
+</svg>

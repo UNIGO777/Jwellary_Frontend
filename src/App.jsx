@@ -1,44 +1,52 @@
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import Auth from './pages/Auth.jsx'
+import Products from './pages/Products.jsx'
+import Product from './pages/Product.jsx'
+import Wishlist from './pages/Wishlist.jsx'
+import Cart from './pages/Cart.jsx'
+import Checkout from './pages/Checkout.jsx'
+import About from './pages/About.jsx'
+import Profile from './pages/Profile.jsx'
+import Orders from './pages/Orders.jsx'
+import OrderDetails from './pages/OrderDetails.jsx'
+import Contact from './pages/Contact.jsx'
 import NotFound from './pages/NotFound.jsx'
+import AdminRoutes from './admin/index.jsx'
+import Footer from './components/Footer.jsx'
+import Navbar from './components/Navbar.jsx'
+
+const cn = (...parts) => parts.filter(Boolean).join(' ')
 
 function App() {
   const location = useLocation()
-  const isAuth = location.pathname.startsWith('/auth')
+  const isAuth = location.pathname.startsWith('/auth') || location.pathname.startsWith('/admin')
+  const isHome = location.pathname === '/'
 
   return (
-    <div >
-      {!isAuth && (
-        <header className="border-b border-white/10">
-          <div className="mx-auto ">
-            <div className="text-sm font-semibold tracking-wide">EWITH JWELLARY</div>
-            <nav className="flex items-center gap-4 text-sm">
-              <NavLink
-                to="/"
-                className={({ isActive }) => (isActive ? 'text-white' : 'text-zinc-300 hover:text-white')}
-                end
-              >
-                Home
-              </NavLink>
-              <NavLink
-                to="/auth"
-                className={({ isActive }) => (isActive ? 'text-white' : 'text-zinc-300 hover:text-white')}
-              >
-                Auth
-              </NavLink>
-            </nav>
-          </div>
-        </header>
-      )}
+    <div className="min-h-screen bg-[#fbf7f3] text-zinc-900">
+      {!isAuth && <Navbar isHome={isHome} />}
 
-      <main >
+      <main className={cn(!isAuth ? (isHome ? '' : 'pt-20') : '')}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/admin/*" element={<AdminRoutes />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/products/:productId" element={<Product />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders/:orderId" element={<OrderDetails />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
+
+      {!isAuth && <Footer />}
     </div>
   )
 }
