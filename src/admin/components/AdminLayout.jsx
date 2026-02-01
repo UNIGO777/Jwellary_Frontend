@@ -9,9 +9,9 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen w-full bg-[#fbf7f3]">
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full flex-col md:flex-row">
         <AdminSidebar />
-        <main className="min-w-0 flex-1 p-0">
+        <main className="min-w-0 flex-1 px-4 py-3 sm:px-5">
           <Outlet />
         </main>
       </div>

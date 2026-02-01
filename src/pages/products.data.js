@@ -1,5 +1,6 @@
 export const formatInr = (value) => {
-  const amount = Number(value || 0)
+  const raw = typeof value === 'string' ? value.replace(/[^\d.-]/g, '') : value
+  const amount = Number(raw || 0)
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',

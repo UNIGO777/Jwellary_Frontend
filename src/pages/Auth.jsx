@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ApiError, authService } from '../services/index.js'
 
 const MotionDiv = motion.div
@@ -27,6 +27,7 @@ const TabButton = ({ active, children, onClick }) => (
 )
 
 export default function Auth() {
+  const navigate = useNavigate()
   const [mode, setMode] = useState('signup')
   const [step, setStep] = useState('init')
   const [busy, setBusy] = useState(false)
@@ -87,6 +88,7 @@ export default function Auth() {
       setMessage('Logged in successfully')
       setStep('init')
       setOtp('')
+      navigate('/', { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -122,18 +124,17 @@ export default function Auth() {
           <p className="mt-2 text-sm text-zinc-600">{subtitle}</p>
 
           <div className="mt-8 space-y-4">
-            {(!isVerify && isSignup) && (
-              <div>
-                <label className="text-xs font-semibold text-zinc-700">Name*</label>
-                <input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="mt-2 w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300"
-                  placeholder="Enter your name"
-                  autoComplete="name"
-                />
-              </div>
-            )}
+            <div className={cn(!isVerify && isSignup ? '' : 'invisible')} aria-hidden={!(!isVerify && isSignup)}>
+              <label className="text-xs font-semibold text-zinc-700">Name*</label>
+              <input
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={!(!isVerify && isSignup)}
+                className="mt-2 w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300"
+                placeholder="Enter your name"
+                autoComplete="name"
+              />
+            </div>
 
             <div>
               <label className="text-xs font-semibold text-zinc-700">Email*</label>
@@ -175,15 +176,13 @@ export default function Auth() {
             )}
           </div>
 
-          {isSignup && (
-            <label className="mt-5 flex items-center gap-3 text-xs text-zinc-600">
-              <input type="checkbox" className="h-4 w-4 rounded border-zinc-300" defaultChecked />
-              <span>
-                I agree to the <span className="font-semibold text-zinc-900">Terms</span> and{' '}
-                <span className="font-semibold text-zinc-900">Privacy Policy</span>
-              </span>
-            </label>
-          )}
+          <label className={cn('mt-5 flex items-center gap-3 text-xs text-zinc-600', isSignup ? '' : 'invisible')} aria-hidden={!isSignup}>
+            <input type="checkbox" className="h-4 w-4 rounded border-zinc-300" defaultChecked disabled={!isSignup} />
+            <span>
+              I agree to the <span className="font-semibold text-zinc-900">Terms</span> and{' '}
+              <span className="font-semibold text-zinc-900">Privacy Policy</span>
+            </span>
+          </label>
 
           {message && <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{message}</div>}
           {error && <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div>}
@@ -253,7 +252,7 @@ export default function Auth() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.05 }}
-          className="relative overflow-hidden rounded-l-[70px]"
+          className="relative overflow-hidden"
         >
           <img
             className="absolute inset-0 h-full w-full object-cover"

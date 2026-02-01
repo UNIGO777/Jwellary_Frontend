@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Heart, ShoppingBag, User } from 'lucide-react'
+import { tokenStore } from '../services/index.js'
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -9,12 +10,11 @@ export default function Navbar({ isHome }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const headerSolid = !isHome || scrolled || mobileNavOpen
+  const isAuthed = Boolean(tokenStore.get())
 
   useEffect(() => {
-    if (!mobileNavOpen) return
-    const id = window.setTimeout(() => setMobileNavOpen(false), 0)
-    return () => window.clearTimeout(id)
-  }, [location.pathname, mobileNavOpen])
+    setMobileNavOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -87,7 +87,7 @@ export default function Navbar({ isHome }) {
             <NavLink to="/cart" className={iconLinkClass} aria-label="Cart">
               <ShoppingBag className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
             </NavLink>
-            <NavLink to="/auth" className={iconLinkClass} aria-label="Login">
+            <NavLink to={isAuthed ? '/profile' : '/auth'} className={iconLinkClass} aria-label={isAuthed ? 'Profile' : 'Login'}>
               <User className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
             </NavLink>
           </div>
@@ -132,8 +132,8 @@ export default function Navbar({ isHome }) {
               <NavLink to="/cart" className={navLinkClassMobile} onClick={() => setMobileNavOpen(false)}>
                 Cart
               </NavLink>
-              <NavLink to="/auth" className={navLinkClassMobile} onClick={() => setMobileNavOpen(false)}>
-                Auth
+              <NavLink to={isAuthed ? '/profile' : '/auth'} className={navLinkClassMobile} onClick={() => setMobileNavOpen(false)}>
+                {isAuthed ? 'Profile' : 'Login / Signup'}
               </NavLink>
             </nav>
           </div>

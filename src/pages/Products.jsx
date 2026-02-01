@@ -228,7 +228,7 @@ export default function Products() {
                     <select
                       value={topCategory}
                       onChange={(e) => setTopCategory(e.target.value)}
-                      className="h-10 rounded-full border border-zinc-200 bg-white px-4 pr-10 text-sm font-semibold text-zinc-900 outline-none hover:bg-[#fbf7f3]"
+                      className="h-10 appearance-none rounded-full border border-zinc-200 bg-white px-4 pr-10 text-sm font-semibold text-zinc-900 outline-none hover:bg-[#fbf7f3]"
                     >
                       {categoryOptions.map((c) => (
                         <option key={c} value={c}>
@@ -450,7 +450,14 @@ export default function Products() {
                             : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
                         )}
                       >
-                        {r ? `${r}+` : 'Any'}
+                        {r ? (
+                          <span className="inline-flex items-center gap-2">
+                            <StarRow value={r} />
+                            <span>{r}+</span>
+                          </span>
+                        ) : (
+                          'Any'
+                        )}
                       </button>
                     ))}
                   </div>
@@ -529,98 +536,97 @@ export default function Products() {
                       transition={{ duration: 0.25, delay: Math.min(idx * 0.02, 0.2) }}
                       className="group"
                     >
-                      <Link to={`/products/${p.id}`} className="block overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md">
-                        <div className={cn('relative aspect-[4/5] bg-gradient-to-br', p.theme)}>
+                      <Link to={`/products/${p.id}`} className="block">
+                        <div className="overflow-hidden border border-zinc-200 bg-white transition-colors group-hover:border-zinc-300">
+                          <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
                           {p.images?.[0] ? (
-                            <img src={p.images[0]} alt={p.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                            <img
+                              src={p.images[0]}
+                              alt={p.name}
+                              className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                              loading="lazy"
+                            />
                           ) : null}
-                          <div className="absolute inset-0 bg-gradient-to-t from-white/85 via-white/10 to-transparent" />
 
-                          <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
-                            {p.badge ? (
-                              <span className="rounded-full border border-zinc-200 bg-white/90 px-3 py-1 text-[11px] font-semibold text-zinc-900">
-                                {p.badge}
-                              </span>
-                            ) : null}
-                            {isSale && percentOff ? (
-                              <span className="rounded-full bg-[#2b2118] px-3 py-1 text-[11px] font-semibold text-white">{percentOff}</span>
-                            ) : null}
-                          </div>
-
-                          <div className="absolute right-4 top-4 flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                            <button
-                              type="button"
-                              className={cn(
-                                'grid h-10 w-10 place-items-center rounded-full border bg-white/90 text-zinc-800 backdrop-blur hover:bg-white',
-                                isWishlisted ? 'border-rose-200 text-rose-600' : 'border-zinc-200'
-                              )}
-                              aria-label="Wishlist"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                wishlistStore.toggle(p.id)
-                                setStorageVersion((v) => v + 1)
-                              }}
-                            >
-                              <svg viewBox="0 0 24 24" className="h-5 w-5" fill={isWishlisted ? 'currentColor' : 'none'} aria-hidden="true">
-                                <path
-                                  d="M12 20.5s-7.5-4.6-9.3-9.2C1.2 7.8 3.6 5 6.6 5c1.7 0 3.2.8 4.1 2 1-1.2 2.4-2 4.1-2 3 0 5.4 2.8 3.9 6.3C19.5 15.9 12 20.5 12 20.5Z"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!p.inStock}
-                              className={cn(
-                                'grid h-10 w-10 place-items-center rounded-full border bg-white/90 text-zinc-800 backdrop-blur',
-                                p.inStock ? 'border-zinc-200 hover:bg-white' : 'cursor-not-allowed border-zinc-200 text-zinc-300'
-                              )}
-                              aria-label="Quick add"
-                              onClick={async (e) => {
-                                e.preventDefault()
-                                if (!p.inStock) return
-                                try {
-                                  await cartService.add(p.id)
-                                  setStorageVersion((v) => v + 1)
-                                } catch (err) {
-                                  if (err instanceof ApiError && err.status === 401) {
-                                    navigate('/auth')
-                                    return
-                                  }
-                                }
-                              }}
-                            >
-                              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-                                <path d="M8 8h13l-1.1 6.2a2 2 0 0 1-2 1.6H10.1a2 2 0 0 1-2-1.6L7.2 4.8H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M10 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" strokeWidth="1.5" />
-                                <path d="M18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" strokeWidth="1.5" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="truncate text-sm font-semibold text-zinc-900">{p.name}</div>
-                              <div className="mt-1 text-xs text-zinc-500">{p.category}</div>
-                            </div>
-                            <div className={cn('text-xs font-semibold', p.inStock ? 'text-emerald-700' : 'text-zinc-500')}>
-                              {p.inStock ? 'In stock' : 'Out'}
-                            </div>
-                          </div>
-
-                          <div className="mt-3 flex items-end justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-zinc-900">{formatInr(p.priceInr)}</div>
-                              {p.compareAtInr ? (
-                                <div className="text-xs text-zinc-500 line-through">{formatInr(p.compareAtInr)}</div>
+                            <div className="absolute left-2 top-2 flex flex-wrap items-center gap-2">
+                              {!p.inStock ? (
+                                <span className="bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-900 backdrop-blur-sm">
+                                  Sold Out
+                                </span>
+                              ) : null}
+                              {p.badge ? (
+                                <span className="border border-zinc-200 bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-zinc-900 backdrop-blur-sm">
+                                  {p.badge}
+                                </span>
+                              ) : null}
+                              {isSale && percentOff ? (
+                                <span className="bg-[#2b2118] px-2.5 py-1 text-[11px] font-semibold text-white">{percentOff}</span>
                               ) : null}
                             </div>
-                            <div className="text-right">
-                              <StarRow value={p.rating} />
-                              <div className="mt-1 text-[11px] font-medium text-zinc-500">{p.reviewsCount || 0} reviews</div>
+
+                            <div className="absolute right-2 top-2 flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+                              <button
+                                type="button"
+                                className={cn(
+                                  'grid h-10 w-10 place-items-center rounded-full border bg-white/90 text-zinc-800 backdrop-blur hover:bg-white',
+                                  isWishlisted ? 'border-rose-200 text-rose-600' : 'border-zinc-200'
+                                )}
+                                aria-label="Wishlist"
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  wishlistStore.toggle(p.id)
+                                  setStorageVersion((v) => v + 1)
+                                }}
+                              >
+                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill={isWishlisted ? 'currentColor' : 'none'} aria-hidden="true">
+                                  <path
+                                    d="M12 20.5s-7.5-4.6-9.3-9.2C1.2 7.8 3.6 5 6.6 5c1.7 0 3.2.8 4.1 2 1-1.2 2.4-2 4.1-2 3 0 5.4 2.8 3.9 6.3C19.5 15.9 12 20.5 12 20.5Z"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                  />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!p.inStock}
+                                className={cn(
+                                  'grid h-10 w-10 place-items-center rounded-full border bg-white/90 text-zinc-800 backdrop-blur',
+                                  p.inStock ? 'border-zinc-200 hover:bg-white' : 'cursor-not-allowed border-zinc-200 text-zinc-300'
+                                )}
+                                aria-label="Quick add"
+                                onClick={async (e) => {
+                                  e.preventDefault()
+                                  if (!p.inStock) return
+                                  try {
+                                    await cartService.add(p.id)
+                                    setStorageVersion((v) => v + 1)
+                                  } catch (err) {
+                                    if (err instanceof ApiError && err.status === 401) {
+                                      navigate('/auth')
+                                      return
+                                    }
+                                  }
+                                }}
+                              >
+                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+                                  <path d="M8 8h13l-1.1 6.2a2 2 0 0 1-2 1.6H10.1a2 2 0 0 1-2-1.6L7.2 4.8H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  <path d="M10 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" strokeWidth="1.5" />
+                                  <path d="M18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" strokeWidth="1.5" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between gap-4 p-3">
+                            <div className="min-w-0">
+                              <div className="truncate text-[13px] font-semibold uppercase tracking-wide text-zinc-900 sm:text-sm">{p.name}</div>
+                              <div className="mt-1 text-xs text-zinc-500">{p.category}</div>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <span className="inline-flex items-center whitespace-nowrap border border-[#2b2118]/15 bg-[#fbf7f3] px-3 py-1 text-[13px] font-bold text-[#2b2118] sm:text-sm">
+                                {formatInr(p.priceInr)}
+                              </span>
+                              {p.compareAtInr ? <div className="mt-1 text-xs text-zinc-500 line-through">{formatInr(p.compareAtInr)}</div> : null}
                             </div>
                           </div>
                         </div>

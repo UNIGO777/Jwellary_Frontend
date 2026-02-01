@@ -125,30 +125,43 @@ export default function Wishlist() {
           ) : (
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((p) => (
-                <div key={p.id} className="overflow-hidden rounded-3xl border border-zinc-200 bg-white">
-                  <Link to={`/products/${p.id}`} className="block">
-                    <div className={cn('relative aspect-[4/5] bg-gradient-to-br', p.theme)}>
+                <div key={p.id} className="overflow-hidden border border-zinc-200 bg-white transition-colors hover:border-zinc-300">
+                  <Link to={`/products/${p.id}`} className="group block">
+                    <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
                       {p.images?.[0] ? (
-                        <img src={p.images[0]} alt={p.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                        <img
+                          src={p.images[0]}
+                          alt={p.name}
+                          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
                       ) : null}
-                      <div className="absolute inset-0 bg-gradient-to-t from-white/85 via-white/10 to-transparent" />
+                      {!p.inStock ? (
+                        <div className="absolute left-2 top-2 bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-900 backdrop-blur-sm">
+                          Sold Out
+                        </div>
+                      ) : null}
                     </div>
                   </Link>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-zinc-900">{p.name}</div>
-                        <div className="mt-1 text-xs text-zinc-500">{p.category}</div>
-                      </div>
-                      <div className="text-sm font-semibold text-zinc-900">{formatInr(p.priceInr)}</div>
+                  <div className="flex justify-between gap-4 p-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-semibold uppercase tracking-wide text-zinc-900 sm:text-sm">{p.name}</div>
+                      <div className="mt-1 text-xs text-zinc-500">{p.category}</div>
                     </div>
-                    <div className="mt-4 flex gap-2">
+                    <div className="shrink-0 text-right">
+                      <span className="inline-flex items-center whitespace-nowrap border border-[#2b2118]/15 bg-[#fbf7f3] px-3 py-1 text-[13px] font-bold text-[#2b2118] sm:text-sm">
+                        {formatInr(p.priceInr)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="px-3 pb-3">
+                    <div className="mt-1 flex gap-2">
                       <button
                         type="button"
                         onClick={() => void addToCart(p.id)}
                         disabled={!p.inStock}
                         className={cn(
-                          'flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
+                          'flex-1 px-4 py-2.5 text-sm font-semibold transition',
                           p.inStock ? 'bg-zinc-900 text-white hover:bg-zinc-950' : 'cursor-not-allowed bg-zinc-200 text-zinc-500'
                         )}
                       >
@@ -157,7 +170,7 @@ export default function Wishlist() {
                       <button
                         type="button"
                         onClick={() => remove(p.id)}
-                        className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                        className="border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
                       >
                         Remove
                       </button>

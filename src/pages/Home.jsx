@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ApiError, productsService } from '../services/index.js'
 import { formatInr } from './products.data.js'
 
@@ -53,21 +53,11 @@ export default function Home() {
   const featuredProducts = products.slice(0, 4)
   const bestsellers = products.slice(0, 12)
 
-  const scrollRef = useRef(null)
-
-  const scroll = (direction) => {
-    if (scrollRef.current) {
-      const { current } = scrollRef
-      const scrollAmount = direction === 'left' ? -300 : 300
-      current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
-    }
-  }
-
   return (
     <div className="bg-white">
       {/* Hero Section */}
       <section className="relative min-h-screen w-full overflow-hidden bg-[#2b2118]">
-        <MotionDiv 
+        <MotionDiv
           initial={{ scale: 1.1, opacity: 0.5 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5 }}
@@ -78,66 +68,97 @@ export default function Home() {
             alt="Hero Model"
             className="h-full w-full object-cover opacity-80"
           />
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-black/10" />
         </MotionDiv>
-        
-        <div className="absolute inset-0 flex items-center justify-center">
+
+        <div className="relative mx-auto flex min-h-screen max-w-screen-2xl flex-col justify-center px-4 py-24 text-white sm:px-6 lg:px-8">
           <MotionDiv
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="text-center text-white"
+            className="max-w-2xl"
           >
-            <h1 className="font-serif text-5xl font-medium tracking-tight sm:text-7xl md:text-8xl">EWITH</h1>
-            <p className="mt-4 text-sm font-light tracking-[0.2em] uppercase opacity-90">Est. 2024</p>
+            <div className="inline-flex items-center gap-2 border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest backdrop-blur-sm">
+              Handcrafted jewellery
+              <span className="h-1 w-1 rounded-full bg-white/70" aria-hidden="true" />
+              Est. 2024
+            </div>
+            <h1 className="mt-6 font-serif text-6xl font-medium leading-none tracking-tight drop-shadow-sm sm:text-8xl md:text-9xl">EWITH</h1>
+            <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/80 sm:text-lg">
+              Everyday elegance, crafted to last. Explore curated designs for modern moments.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                to="/products"
+                className="inline-flex h-11 w-full items-center justify-center bg-white px-6 text-sm font-semibold text-[#2b2118] transition hover:bg-white/90 sm:w-auto"
+              >
+                Shop collection
+              </Link>
+              <Link
+                to="/about"
+                className="inline-flex h-11 w-full items-center justify-center border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 sm:w-auto"
+              >
+                Our story
+              </Link>
+            </div>
           </MotionDiv>
         </div>
       </section>
 
       {/* Section 1: Creating, Crafting & Wearing */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8">
+      <section className="border-t border-zinc-100 px-4 py-20 sm:px-6 lg:px-8">
         <MotionSection className="mx-auto max-w-screen-2xl">
           {error ? <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
           <div className="mb-12 flex flex-col justify-between gap-8 md:flex-row md:items-end">
-            <h2 className="max-w-md font-serif text-4xl leading-tight text-zinc-900 md:text-5xl">
-              Creating, Crafting <br /> & Wearing.
-            </h2>
+            <div className="max-w-md">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Featured</div>
+              <h2 className="mt-3 font-serif text-3xl leading-tight text-zinc-900 sm:text-4xl md:text-5xl">
+                Creating, Crafting <br /> & Wearing.
+              </h2>
+            </div>
             <div className="max-w-sm text-sm leading-relaxed text-zinc-600">
               Unique jewellery that tells a story. Discover our latest collection of handcrafted pieces designed for the modern muse.
               <div className="mt-4">
-                <Link to="/products" className="group inline-flex items-center gap-2 border-b border-zinc-900 pb-0.5 text-xs font-semibold uppercase tracking-widest text-zinc-900">
-                  Shop All 
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
+                <Link to="/products" className="inline-flex h-11 items-center border border-zinc-200 bg-white px-5 text-xs font-semibold uppercase tracking-widest text-zinc-900 transition hover:bg-zinc-50">
+                  Shop all
                 </Link>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 sm:gap-x-7 sm:gap-y-10 lg:grid-cols-4">
             {(loading ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}` })) : featuredProducts).map((product) => (
               <Link key={product.id} to={`/products/${product.id}`} className="group block">
-                <div className="relative aspect-[4/5] overflow-hidden bg-zinc-100">
-                  {product.images?.[0] ? (
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-zinc-100" />
-                  )}
-                  {product.id && product.id.startsWith('skeleton-') ? null : !product.inStock ? (
-                    <div className="absolute left-3 top-3 bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-900 backdrop-blur-sm">
-                      Sold Out
-                    </div>
-                  ) : null}
-                </div>
-                <div className="mt-4 flex justify-between gap-4">
-                  <div>
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-900">{product.name || ' '}</h3>
-                    <p className="mt-1 text-xs text-zinc-500">{product.category || ' '}</p>
+                <div className="overflow-hidden border border-zinc-200 bg-white shadow-sm transition-all will-change-transform group-hover:-translate-y-0.5 group-hover:border-zinc-300 group-hover:shadow-md">
+                  <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
+                    {product.images?.[0] ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-zinc-100" />
+                    )}
+                    {product.id && product.id.startsWith('skeleton-') ? null : !product.inStock ? (
+                      <div className="absolute left-2 top-2 bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-900 backdrop-blur-sm">
+                        Sold Out
+                      </div>
+                    ) : null}
                   </div>
-                  <div className="text-right text-sm font-medium text-zinc-900">{product.priceInr ? formatInr(product.priceInr) : ' '}</div>
+                  <div className="flex justify-between gap-4 p-3 sm:p-4">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-[13px] font-semibold uppercase tracking-wide text-zinc-900 sm:text-sm sm:whitespace-normal sm:overflow-visible">
+                        {product.name || ' '}
+                      </h3>
+                      <p className="mt-1 text-xs text-zinc-500">{product.category || ' '}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="inline-flex items-center whitespace-nowrap border border-[#2b2118]/15 bg-[#fbf7f3] px-3 py-1 text-[13px] font-bold text-[#2b2118] sm:text-sm">
+                        {product.priceInr ? formatInr(product.priceInr) : ' '}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </Link>
             ))}
@@ -150,40 +171,40 @@ export default function Home() {
         <MotionSection className="mx-auto max-w-screen-2xl">
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-20">
             <div className="lg:col-span-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Design</div>
               <h2 className="font-serif text-4xl leading-tight md:text-5xl lg:text-6xl">
                 Emotion <br /> embraces <br /> technique.
               </h2>
-              <p className="mt-8 max-w-xs text-sm leading-relaxed text-white/70">
+              <p className="mt-8 max-w-md text-sm leading-relaxed text-white/75">
                 Our pieces are more than just accessories; they are feelings captured in gold and silver. 
                 We combine traditional craftsmanship with contemporary design to create heirlooms for the future.
               </p>
               <div className="mt-8">
-                <Link to="/about" className="group inline-flex items-center gap-2 border-b border-white pb-0.5 text-xs font-semibold uppercase tracking-widest text-white">
-                  Read Our Story
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
+                <Link to="/about" className="inline-flex h-11 items-center border border-white/20 bg-white/10 px-5 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur-sm transition hover:bg-white/15">
+                  Read our story
                 </Link>
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4 lg:col-span-8 lg:grid-cols-3">
               <div className="col-span-1 space-y-4 pt-12">
-                <div className="aspect-[3/4] overflow-hidden">
+                <div className="aspect-[3/4] overflow-hidden border border-white/10 bg-white/5 shadow-sm">
                    <img src="https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?q=80&w=800&auto=format&fit=crop" alt="Lifestyle 1" className="h-full w-full object-cover opacity-90" />
                 </div>
-                <div className="aspect-[3/4] overflow-hidden">
+                <div className="aspect-[3/4] overflow-hidden border border-white/10 bg-white/5 shadow-sm">
                    <img src="https://images.unsplash.com/photo-1573408301185-9146fe634ad0?q=80&w=800&auto=format&fit=crop" alt="Lifestyle 2" className="h-full w-full object-cover opacity-90" />
                 </div>
               </div>
               <div className="col-span-1 space-y-4">
-                <div className="aspect-[3/4] overflow-hidden">
+                <div className="aspect-[3/4] overflow-hidden border border-white/10 bg-white/5 shadow-sm">
                    <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=800&auto=format&fit=crop" alt="Lifestyle 3" className="h-full w-full object-cover opacity-90" />
                 </div>
-                <div className="aspect-[3/4] overflow-hidden">
+                <div className="aspect-[3/4] overflow-hidden border border-white/10 bg-white/5 shadow-sm">
                    <img src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800&auto=format&fit=crop" alt="Lifestyle 4" className="h-full w-full object-cover opacity-90" />
                 </div>
               </div>
               <div className="col-span-2 hidden space-y-4 pt-24 lg:col-span-1 lg:block">
-                <div className="aspect-[3/4] overflow-hidden">
+                <div className="aspect-[3/4] overflow-hidden border border-white/10 bg-white/5 shadow-sm">
                    <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=800&auto=format&fit=crop" alt="Lifestyle 5" className="h-full w-full object-cover opacity-90" />
                 </div>
               </div>
@@ -197,46 +218,24 @@ export default function Home() {
         <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
           <MotionSection>
             <div className="mb-12 flex flex-col justify-between gap-8 md:flex-row md:items-end">
-              <h2 className="font-serif text-4xl leading-tight text-zinc-900 md:text-5xl">Bestsellers</h2>
-              
-              
-              <div className="flex items-end gap-6">
-                  <div className="max-w-sm text-sm leading-relaxed text-zinc-600 hidden md:block">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Most loved</div>
+                <h2 className="mt-3 font-serif text-4xl leading-tight text-zinc-900 md:text-5xl">Bestsellers</h2>
+              </div>
+              <div className="max-w-sm text-sm leading-relaxed text-zinc-600 hidden md:block">
                   Pieces loved by you. Discover the favorites that have found their way into collections around the world.
-                  </div>
-                  
-                  <div className="flex gap-2">
-                      <button 
-                          onClick={() => scroll('left')}
-                          className="grid h-10 w-10 place-items-center rounded-full border border-zinc-200 text-zinc-900 hover:bg-zinc-50 transition"
-                          aria-label="Previous"
-                      >
-                          ←
-                      </button>
-                      <button 
-                          onClick={() => scroll('right')}
-                          className="grid h-10 w-10 place-items-center rounded-full border border-zinc-200 text-zinc-900 hover:bg-zinc-50 transition"
-                          aria-label="Next"
-                      >
-                          →
-                      </button>
-                  </div>
               </div>
             </div>
           </MotionSection>
         </div>
 
         <MotionSection delay={0.2}>
-          <div 
-            ref={scrollRef}
-            className="flex gap-6 overflow-x-auto pb-8 px-4 sm:px-6 lg:px-8 scrollbar-hide snap-x"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
+          <div className="grid grid-cols-1 gap-x-8 gap-y-12 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
             {bestsellers.map((product) => (
               <Link 
                 key={product.id} 
                 to={`/products/${product.id}`} 
-                className="group block min-w-[280px] sm:min-w-[320px] snap-start"
+                className="group block"
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-zinc-100">
                   <img
@@ -251,8 +250,10 @@ export default function Home() {
                   )}
                 </div>
                 <div className="mt-4 flex justify-between gap-4">
-                  <div>
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-900">{product.name}</h3>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold uppercase tracking-wide text-zinc-900 sm:whitespace-normal sm:overflow-visible">
+                      {product.name}
+                    </h3>
                     <p className="mt-1 text-xs text-zinc-500">{product.category}</p>
                   </div>
                   <div className="text-right text-sm font-medium text-zinc-900">{formatInr(product.priceInr)}</div>

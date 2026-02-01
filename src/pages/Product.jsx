@@ -529,24 +529,29 @@ export default function Product() {
 
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {related.map((p) => (
-                <Link
-                  key={p.id}
-                  to={`/products/${p.id}`}
-                  className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm hover:shadow-md"
-                >
-                  <div className={cn('relative aspect-[4/3] border-b border-zinc-200 bg-gradient-to-br', p.theme)}>
-                    {p.images?.[0] ? (
-                      <img
-                        src={p.images[0]}
-                        alt={p.name}
-                        className="absolute inset-0 h-full w-full object-contain p-6"
-                        loading="lazy"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="p-4">
-                    <div className="text-sm font-semibold text-zinc-900">{p.name}</div>
-                    <div className="mt-1 text-xs text-zinc-500">{formatInr(p.priceInr)}</div>
+                <Link key={p.id} to={`/products/${p.id}`} className="group block">
+                  <div className="overflow-hidden border border-zinc-200 bg-white transition-colors group-hover:border-zinc-300">
+                    <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
+                      {p.images?.[0] ? (
+                        <img
+                          src={p.images[0]}
+                          alt={p.name}
+                          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="flex justify-between gap-4 p-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-[13px] font-semibold uppercase tracking-wide text-zinc-900 sm:text-sm">{p.name}</div>
+                        <div className="mt-1 text-xs text-zinc-500">{p.category || ' '}</div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className="inline-flex items-center whitespace-nowrap border border-[#2b2118]/15 bg-[#fbf7f3] px-3 py-1 text-[13px] font-bold text-[#2b2118] sm:text-sm">
+                          {formatInr(p.priceInr)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </Link>
               ))}

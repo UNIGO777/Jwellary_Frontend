@@ -24,7 +24,7 @@ const SidebarLink = ({ to, label, end, icon }) => (
 )
 
 export default function AdminSidebar({
-  title = 'Hireism',
+  title = 'Admin',
   links,
   activePath,
   onLogout
@@ -116,10 +116,12 @@ export default function AdminSidebar({
   }, [links])
 
   return (
-    <aside className="w-[260px] shrink-0 border-r border-zinc-200 bg-white">
-      <div className="flex h-full flex-col px-5 py-0">
+    <aside className="w-full shrink-0 border-b border-zinc-200 bg-white md:w-[260px] md:border-b-0 md:border-r">
+      <div className="flex h-full flex-col px-5 py-3">
         <div className="flex items-center gap-3 px-2">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#2b2118] text-sm font-extrabold text-white">E</div>
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#2b2118] text-sm font-extrabold text-white">
+            {(String(title).trim()[0] || 'A').toUpperCase()}
+          </div>
           <div className="text-base font-extrabold tracking-tight text-zinc-900">{title}</div>
         </div>
 

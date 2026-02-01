@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import Auth from './pages/Auth.jsx'
 import Products from './pages/Products.jsx'
@@ -15,6 +15,7 @@ import NotFound from './pages/NotFound.jsx'
 import AdminRoutes from './admin/index.jsx'
 import Footer from './components/Footer.jsx'
 import Navbar from './components/Navbar.jsx'
+import { tokenStore } from './services/index.js'
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -35,7 +36,7 @@ function App() {
           <Route path="/products" element={<Products />} />
           <Route path="/products/:productId" element={<Product />} />
           <Route path="/about" element={<About />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile" element={tokenStore.get() ? <Profile /> : <Navigate to="/auth" replace />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:orderId" element={<OrderDetails />} />
           <Route path="/contact" element={<Contact />} />
