@@ -23,17 +23,19 @@ export default function AdminProductForm() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [isFeatured, setIsFeatured] = useState(false)
+  const [isBestSeller, setIsBestSeller] = useState(false)
   const [categoryId, setCategoryId] = useState('')
   const [subCategoryId, setSubCategoryId] = useState('')
 
-  const [metal, setMetal] = useState('')
-  const [stone, setStone] = useState('')
+  const [material, setMaterial] = useState('')
+  const [materialType, setMaterialType] = useState('')
+  const [materialTypes, setMaterialTypes] = useState({ gold: [], silver: [], diamond: [] })
+
   const [purity, setPurity] = useState('')
   const [weightGrams, setWeightGrams] = useState('')
 
-  const [variantTitle, setVariantTitle] = useState('Default')
   const [sku, setSku] = useState('')
-  const [variantActive, setVariantActive] = useState(true)
   const [stock, setStock] = useState(0)
   const [makingCostAmount, setMakingCostAmount] = useState(0)
   const [otherChargesAmount, setOtherChargesAmount] = useState(0)
@@ -77,6 +79,25 @@ export default function AdminProductForm() {
 
   useEffect(() => {
     let alive = true
+    api
+      .get('/api/products/meta/material-types', withAdminAuth())
+      .then((res) => {
+        if (!alive) return
+        const data = res?.data && typeof res.data === 'object' ? res.data : {}
+        setMaterialTypes({
+          gold: Array.isArray(data.gold) ? data.gold : [],
+          silver: Array.isArray(data.silver) ? data.silver : [],
+          diamond: Array.isArray(data.diamond) ? data.diamond : []
+        })
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let alive = true
     if (!categoryId) {
       setSubcategories([])
       setSubCategoryId('')
@@ -111,29 +132,29 @@ export default function AdminProductForm() {
         .then((res) => {
           if (!alive) return
           const p = res?.data
-          const v = Array.isArray(p?.variants) ? p.variants[0] || {} : {}
-          const imagesValue = Array.isArray(v?.images) ? v.images : []
+          const imagesValue = Array.isArray(p?.images) ? p.images : []
 
           setName(p?.name || '')
           setDescription(p?.description || '')
           setIsActive(p?.isActive !== undefined ? Boolean(p.isActive) : true)
+          setIsFeatured(p?.isFeatured !== undefined ? Boolean(p.isFeatured) : false)
+          setIsBestSeller(p?.isBestSeller !== undefined ? Boolean(p.isBestSeller) : false)
           setCategoryId(p?.category || '')
           setSubCategoryId(p?.subCategory || '')
 
-          setMetal(p?.attributes?.metal || '')
-          setStone(p?.attributes?.stone || '')
+          setMaterial(p?.material ? String(p.material) : '')
+          setMaterialType(p?.materialType !== undefined && p?.materialType !== null ? String(p.materialType) : '')
+
           setPurity(p?.attributes?.purity || '')
           setWeightGrams(p?.attributes?.weightGrams || '')
 
-          setVariantTitle(v?.title || 'Default')
-          setSku(v?.sku || '')
-          setVariantActive(v?.isActive !== undefined ? Boolean(v.isActive) : true)
-          setStock(Number(v?.stock || 0))
-          setMakingCostAmount(Number(v?.makingCost?.amount || 0))
-          setOtherChargesAmount(Number(v?.otherCharges?.amount || 0))
+          setSku(p?.sku || '')
+          setStock(Number(p?.stock || 0))
+          setMakingCostAmount(Number(p?.makingCost?.amount || 0))
+          setOtherChargesAmount(Number(p?.otherCharges?.amount || 0))
 
           setImages(imagesValue.map((x) => String(x)).filter(Boolean))
-          setVideo(v?.video ? String(v.video) : '')
+          setVideo(p?.video ? String(p.video) : '')
         })
         .catch((err) => {
           if (!alive) return
@@ -160,6 +181,30 @@ export default function AdminProductForm() {
       .map((c) => ({ id: String(c?._id || c?.id), name: c?.name || '-' }))
       .filter((c) => Boolean(c.id))
   }, [subcategories])
+
+  const materialTypeOptions = useMemo(() => {
+    if (material === 'gold') return materialTypes.gold.map((t) => ({ value: String(t?.value ?? ''), label: String(t?.label ?? '') })).filter((t) => Boolean(t.value))
+    if (material === 'silver') return materialTypes.silver.map((t) => ({ value: String(t?.value ?? ''), label: String(t?.label ?? '') })).filter((t) => Boolean(t.value))
+    if (material === 'diamond') return materialTypes.diamond.map((t) => ({ value: String(t?.value ?? ''), label: String(t?.label ?? '') })).filter((t) => Boolean(t.value))
+    return []
+  }, [material, materialTypes.diamond, materialTypes.gold, materialTypes.silver])
+
+  useEffect(() => {
+    if (!material) return
+    if (!materialType) {
+      if (material === 'diamond') setPurity('')
+      return
+    }
+    if (material === 'gold') {
+      const selected = materialTypes.gold.find((t) => String(t?.value) === String(materialType))
+      setPurity(selected?.purity !== undefined && selected?.purity !== null ? String(selected.purity) : '')
+    } else if (material === 'silver') {
+      const selected = materialTypes.silver.find((t) => String(t?.value) === String(materialType))
+      setPurity(selected?.purity !== undefined && selected?.purity !== null ? String(selected.purity) : '')
+    } else if (material === 'diamond') {
+      setPurity('')
+    }
+  }, [material, materialType, materialTypes.gold, materialTypes.silver])
 
   const uploadMultipleImages = async (files) => {
     const fd = new FormData()
@@ -284,24 +329,20 @@ export default function AdminProductForm() {
         categoryId: categoryId || undefined,
         subCategoryId: subCategoryId || undefined,
         isActive: Boolean(isActive),
+        isFeatured: Boolean(isFeatured),
+        isBestSeller: Boolean(isBestSeller),
+        material: material || undefined,
+        materialType: materialType || undefined,
+        sku: sku.trim() || undefined,
+        stock: Number(stock || 0),
+        makingCost: { amount: Number(makingCostAmount || 0) },
+        otherCharges: { amount: Number(otherChargesAmount || 0) },
+        images: images.length ? images : undefined,
+        video: video.trim() || undefined,
         attributes: {
-          metal: metal.trim(),
-          stone: stone.trim(),
           purity: purity.trim(),
           weightGrams: weightGrams === '' ? undefined : Number(weightGrams)
-        },
-        variants: [
-          {
-            title: variantTitle.trim() || 'Default',
-            sku: sku.trim() || undefined,
-            stock: Number(stock || 0),
-            isActive: Boolean(variantActive),
-            makingCost: { amount: Number(makingCostAmount || 0) },
-            otherCharges: { amount: Number(otherChargesAmount || 0) },
-            images: images.length ? images : undefined,
-            video: video.trim() || undefined
-          }
-        ]
+        }
       }
 
       if (isEdit) await api.put(`/api/products/${id}`, withAdminAuth({ body: payload }))
@@ -431,23 +472,38 @@ export default function AdminProductForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-700">Metal</label>
-            <input
-              type="text"
-              value={metal}
-              onChange={(e) => setMetal(e.target.value)}
-              className="mt-1 block w-full border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
-            />
+            <label className="block text-sm font-medium text-stone-700">Material</label>
+            <select
+              value={material}
+              onChange={(e) => {
+                setMaterial(e.target.value)
+                setMaterialType('')
+                setPurity('')
+              }}
+              className="mt-1 block h-10 w-full rounded-md border border-stone-300 bg-white px-3 text-sm text-stone-900 outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400"
+            >
+              <option value="">Select material</option>
+              <option value="gold">Gold</option>
+              <option value="silver">Silver</option>
+              <option value="diamond">Diamond</option>
+            </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-700">Stone</label>
-            <input
-              type="text"
-              value={stone}
-              onChange={(e) => setStone(e.target.value)}
-              className="mt-1 block w-full border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
-            />
+            <label className="block text-sm font-medium text-stone-700">Material Type</label>
+            <select
+              value={materialType}
+              onChange={(e) => setMaterialType(e.target.value)}
+              disabled={!material}
+              className="mt-1 block h-10 w-full rounded-md border border-stone-300 bg-white px-3 text-sm text-stone-900 outline-none disabled:cursor-not-allowed disabled:bg-stone-50"
+            >
+              <option value="">{material ? 'Select type' : 'Select material first'}</option>
+              {materialTypeOptions.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -456,6 +512,7 @@ export default function AdminProductForm() {
               type="text"
               value={purity}
               onChange={(e) => setPurity(e.target.value)}
+              disabled={material === 'gold' || material === 'silver'}
               className="mt-1 block w-full border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
             />
           </div>
@@ -476,9 +533,16 @@ export default function AdminProductForm() {
               <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
               Product active
             </label>
+          </div>
+
+          <div className="col-span-2 grid gap-4 sm:grid-cols-2">
             <label className="flex cursor-pointer items-center gap-3 text-sm text-stone-700">
-              <input type="checkbox" checked={variantActive} onChange={(e) => setVariantActive(e.target.checked)} />
-              Variant active
+              <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
+              Featured product
+            </label>
+            <label className="flex cursor-pointer items-center gap-3 text-sm text-stone-700">
+              <input type="checkbox" checked={isBestSeller} onChange={(e) => setIsBestSeller(e.target.checked)} />
+              Best seller
             </label>
           </div>
 

@@ -25,10 +25,6 @@ export const authService = {
     return api.get('/api/users/me')
   },
 
-  async updatePassword({ oldPassword, newPassword }) {
-    return api.patch('/api/users/password', { body: { oldPassword, newPassword } })
-  },
-
   async logout() {
     tokenStore.set('')
     try {

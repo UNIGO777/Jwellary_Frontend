@@ -19,7 +19,8 @@ const MotionSection = ({ children, className, delay = 0 }) => (
 )
 
 export default function Home() {
-  const [products, setProducts] = useState([])
+  const [featuredProducts, setFeaturedProducts] = useState([])
+  const [bestsellers, setBestsellers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -30,17 +31,21 @@ export default function Home() {
       setLoading(true)
       setError('')
     })
-    productsService
-      .list({ page: 1, limit: 20 })
-      .then((res) => {
+    Promise.all([
+      productsService.list({ page: 1, limit: 4, featured: true }),
+      productsService.list({ page: 1, limit: 8, bestSeller: true })
+    ])
+      .then(([featuredRes, bestRes]) => {
         if (!alive) return
-        setProducts(Array.isArray(res?.data) ? res.data : [])
+        setFeaturedProducts(Array.isArray(featuredRes?.data) ? featuredRes.data : [])
+        setBestsellers(Array.isArray(bestRes?.data) ? bestRes.data : [])
       })
       .catch((err) => {
         if (!alive) return
         const message = err instanceof ApiError ? err.message : err?.message ? String(err.message) : 'Failed to load products'
         setError(message)
-        setProducts([])
+        setFeaturedProducts([])
+        setBestsellers([])
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -49,9 +54,6 @@ export default function Home() {
       alive = false
     }
   }, [])
-
-  const featuredProducts = products.slice(0, 4)
-  const bestsellers = products.slice(0, 12)
 
   return (
     <div className="bg-white">
@@ -231,18 +233,22 @@ export default function Home() {
 
         <MotionSection delay={0.2}>
           <div className="grid grid-cols-1 gap-x-8 gap-y-12 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
-            {bestsellers.map((product) => (
+            {(loading ? Array.from({ length: 8 }).map((_, i) => ({ id: `skeleton-${i}` })) : bestsellers).map((product) => (
               <Link 
                 key={product.id} 
-                to={`/products/${product.id}`} 
+                to={product.id ? `/products/${product.id}` : '#'} 
                 className="group block"
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-zinc-100">
-                  <img
-                    src={product.images?.[0] || ''}
-                    alt={product.name}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
+                  {product.images?.[0] ? (
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-zinc-100" />
+                  )}
                   {product.badge && (
                      <div className="absolute left-3 top-3 bg-zinc-900/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
                       {product.badge}
@@ -252,11 +258,11 @@ export default function Home() {
                 <div className="mt-4 flex justify-between gap-4">
                   <div className="min-w-0">
                     <h3 className="truncate text-sm font-semibold uppercase tracking-wide text-zinc-900 sm:whitespace-normal sm:overflow-visible">
-                      {product.name}
+                      {product.name || ' '}
                     </h3>
-                    <p className="mt-1 text-xs text-zinc-500">{product.category}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{product.category || ' '}</p>
                   </div>
-                  <div className="text-right text-sm font-medium text-zinc-900">{formatInr(product.priceInr)}</div>
+                  <div className="text-right text-sm font-medium text-zinc-900">{product.priceInr ? formatInr(product.priceInr) : ' '}</div>
                 </div>
               </Link>
             ))}
@@ -264,12 +270,14 @@ export default function Home() {
         </MotionSection>
         
         <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-           <div className="mt-8 text-center md:hidden">
-             <Link to="/products?sort=bestsellers" className="group inline-flex items-center gap-2 border-b border-zinc-900 pb-0.5 text-xs font-semibold uppercase tracking-widest text-zinc-900">
-                 Shop Bestsellers
-                 <span className="transition-transform group-hover:translate-x-1">→</span>
-             </Link>
-           </div>
+          <div className="mt-10 text-center">
+            <Link
+              to="/bestsellers"
+              className="inline-flex h-11 items-center border border-zinc-200 bg-white px-5 text-xs font-semibold uppercase tracking-widest text-zinc-900 transition hover:bg-zinc-50"
+            >
+              See more bestsellers
+            </Link>
+          </div>
         </div>
       </section>
 

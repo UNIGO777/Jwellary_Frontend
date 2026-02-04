@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { ApiError, adminAuthService, api, resolveAssetUrl, withAdminAuth } from '../../services/index.js'
 
-const MotionDiv = motion.div
+const MotionTr = motion.tr
 
 const getErrorMessage = (err) => {
   if (err instanceof ApiError) return err.message
@@ -96,7 +96,9 @@ export default function AdminProducts() {
     }
   }
 
-  const totalPages = Math.ceil(total / limit)
+  const totalPages = Math.max(1, Math.ceil(total / limit))
+  const from = total ? (page - 1) * limit + 1 : 0
+  const to = total ? Math.min(page * limit, total) : 0
 
   return (
     <div>
@@ -163,16 +165,20 @@ export default function AdminProducts() {
                   </tr>
                 ) : (
                   products.map((product) => {
-                    const variant = product.variants?.[0] || {}
-                    const price = variant.makingCost?.amount 
-                      ? `₹${variant.makingCost.amount.toLocaleString('en-IN')}` 
-                      : 'N/A'
-                    const imagesValue = variant.images
-                    const rawImage = (Array.isArray(imagesValue) ? imagesValue[0] : typeof imagesValue === 'string' ? imagesValue : '') || variant.image
+                    const making = Number(product?.makingCost?.amount || 0)
+                    const other = Number(product?.otherCharges?.amount || 0)
+                    const priceRaw = making + other
+                    const price = priceRaw > 0 ? `₹${priceRaw.toLocaleString('en-IN')}` : 'N/A'
+                    const imagesValue = product?.images
+                    const rawImage = (Array.isArray(imagesValue) ? imagesValue[0] : typeof imagesValue === 'string' ? imagesValue : '') || product?.image
                     const image = resolveAssetUrl(rawImage) || 'https://via.placeholder.com/40'
+                    const stock = Number(product?.stock || 0)
+                    const description = product.description ? String(product.description) : ''
+                    const shortDescription = description ? description.slice(0, 44) : ''
+                    const showEllipsis = description.length > 44
                     
                     return (
-                      <MotionDiv 
+                      <MotionTr
                         key={product._id} 
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }}
@@ -193,16 +199,18 @@ export default function AdminProducts() {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-stone-900">{product.name}</div>
-                              <div className="text-sm text-stone-500 truncate max-w-xs">{product.description?.substring(0, 30)}...</div>
+                              {shortDescription ? (
+                                <div className="text-sm text-stone-500 truncate max-w-xs">{shortDescription}{showEllipsis ? '…' : ''}</div>
+                              ) : null}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-stone-900">{variant.sku || '-'}</div>
+                          <div className="text-sm text-stone-900">{product?.sku || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${variant.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                             {variant.stock || 0} in stock
+                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                             {stock} in stock
                            </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
@@ -212,7 +220,7 @@ export default function AdminProducts() {
                           <Link to={`/admin/products/${product._id}`} className="text-stone-600 hover:text-stone-900 mr-4">Edit</Link>
                           <button onClick={() => handleDelete(product._id)} className="text-red-600 hover:text-red-900">Delete</button>
                         </td>
-                      </MotionDiv>
+                      </MotionTr>
                     )
                   })
                 )}
@@ -232,7 +240,7 @@ export default function AdminProducts() {
                 </button>
                 <button 
                   onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
+                  disabled={page >= totalPages || totalPages <= 1}
                   className="ml-3 relative inline-flex items-center px-4 py-2 border border-stone-300 text-sm font-medium rounded-md text-stone-700 bg-white hover:bg-stone-50 disabled:opacity-50"
                 >
                   Next
@@ -241,7 +249,7 @@ export default function AdminProducts() {
              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-stone-700">
-                    Showing <span className="font-medium">{(page - 1) * limit + 1}</span> to <span className="font-medium">{Math.min(page * limit, total)}</span> of <span className="font-medium">{total}</span> results
+                    Showing <span className="font-medium">{from}</span> to <span className="font-medium">{to}</span> of <span className="font-medium">{total}</span> results
                   </p>
                 </div>
                 <div>
@@ -267,7 +275,7 @@ export default function AdminProducts() {
                     ))}
                     <button
                       onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-                      disabled={page >= totalPages}
+                      disabled={page >= totalPages || totalPages <= 1}
                       className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-stone-300 bg-white text-sm font-medium text-stone-500 hover:bg-stone-50 disabled:opacity-50"
                     >
                       <span className="sr-only">Next</span>

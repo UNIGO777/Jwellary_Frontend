@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { formatInr, formatPercentOff } from './products.data.js'
-import { ApiError, cartService, productsService, wishlistStore } from '../services/index.js'
+import { ApiError, cartService, categoriesService, productsService, subcategoriesService, wishlistStore } from '../services/index.js'
 
 const MotionDiv = motion.div
 
@@ -65,6 +65,8 @@ const FilterSection = ({ title, children, footer }) => (
 )
 
 export default function Products() {
+  const location = useLocation()
+  const { categorySlug, subCategorySlug } = useParams()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('Featured')
@@ -87,13 +89,59 @@ export default function Products() {
 
   useEffect(() => {
     let alive = true
+    const sp = new URLSearchParams(location.search)
+    const categoryIdFromSearch = (sp.get('categoryId') || '').trim()
+    const subCategoryIdFromSearch = (sp.get('subCategoryId') || '').trim()
+
     queueMicrotask(() => {
       if (!alive) return
       setLoading(true)
       setError('')
     })
-    productsService
-      .list({ page: 1, limit: 200 })
+
+    const resolveFilters = async () => {
+      let categoryId = categoryIdFromSearch
+      let subCategoryId = subCategoryIdFromSearch
+
+      const catSlug = categorySlug ? String(categorySlug).trim().toLowerCase() : ''
+      const scSlug = subCategorySlug ? String(subCategorySlug).trim().toLowerCase() : ''
+
+      if (!categoryId && catSlug) {
+        const res = await categoriesService.list({ page: 1, limit: 200, isActive: true })
+        const list = Array.isArray(res?.data) ? res.data : []
+        const match = list.find((c) => String(c?.slug || '').toLowerCase() === catSlug)
+        if (!match?._id) throw new Error('Category not found')
+        categoryId = String(match._id)
+      }
+
+      if (!subCategoryId && scSlug) {
+        let list = []
+        if (categoryId) {
+          const res = await subcategoriesService.list({ page: 1, limit: 500, isActive: true, categoryId })
+          list = Array.isArray(res?.data) ? res.data : []
+        }
+        if (!list.length) {
+          const res = await subcategoriesService.list({ page: 1, limit: 500, isActive: true })
+          list = Array.isArray(res?.data) ? res.data : []
+        }
+        const match = list.find((s) => String(s?.slug || '').toLowerCase() === scSlug)
+        if (!match?._id) throw new Error('Subcategory not found')
+        subCategoryId = String(match._id)
+        if (!categoryId && match?.category) categoryId = String(match.category)
+      }
+
+      return { categoryId, subCategoryId }
+    }
+
+    resolveFilters()
+      .then(({ categoryId, subCategoryId }) =>
+        productsService.list({
+          page: 1,
+          limit: 200,
+          categoryId: categoryId || undefined,
+          subCategoryId: subCategoryId || undefined
+        })
+      )
       .then((res) => {
         if (!alive) return
         setAllProducts(Array.isArray(res?.data) ? res.data : [])
@@ -102,6 +150,7 @@ export default function Products() {
         if (!alive) return
         const message = err instanceof ApiError ? err.message : err?.message ? String(err.message) : 'Failed to load products'
         setError(message)
+        setAllProducts([])
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -109,7 +158,7 @@ export default function Products() {
     return () => {
       alive = false
     }
-  }, [])
+  }, [location.search, categorySlug, subCategorySlug])
 
   const priceRange = useMemo(() => {
     const values = allProducts.map((p) => Number(p.priceInr || 0)).filter((n) => Number.isFinite(n) && n > 0)

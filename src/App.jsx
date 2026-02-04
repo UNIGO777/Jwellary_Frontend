@@ -3,6 +3,7 @@ import Home from './pages/Home.jsx'
 import Auth from './pages/Auth.jsx'
 import Products from './pages/Products.jsx'
 import Product from './pages/Product.jsx'
+import BestSellers from './pages/BestSellers.jsx'
 import Wishlist from './pages/Wishlist.jsx'
 import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
@@ -26,7 +27,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#fbf7f3] text-zinc-900">
-      {!isAuth && <Navbar isHome={isHome} />}
+      {!isAuth && <Navbar key={location.pathname} isHome={isHome} />}
 
       <main className={cn(!isAuth ? (isHome ? '' : 'pt-20') : '')}>
         <Routes>
@@ -34,6 +35,9 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin/*" element={<AdminRoutes />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/products/category/:categorySlug" element={<Products />} />
+          <Route path="/products/category/:categorySlug/:subCategorySlug" element={<Products />} />
+          <Route path="/bestsellers" element={<BestSellers />} />
           <Route path="/products/:productId" element={<Product />} />
           <Route path="/about" element={<About />} />
           <Route path="/profile" element={tokenStore.get() ? <Profile /> : <Navigate to="/auth" replace />} />

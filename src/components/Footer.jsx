@@ -24,7 +24,7 @@ export default function Footer() {
             <ul className="mt-4 space-y-3 text-sm">
               <li><Link to="/products" className="hover:text-white hover:underline">Shop All</Link></li>
               <li><Link to="/products?sort=newest" className="hover:text-white hover:underline">New Arrivals</Link></li>
-              <li><Link to="/products?sort=bestsellers" className="hover:text-white hover:underline">Bestsellers</Link></li>
+              <li><Link to="/bestsellers" className="hover:text-white hover:underline">Bestsellers</Link></li>
               <li><Link to="/products?sort=sale" className="hover:text-white hover:underline">Sale</Link></li>
             </ul>
           </div>

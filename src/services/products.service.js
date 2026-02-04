@@ -5,15 +5,10 @@ const asNumber = (v) => {
   return Number.isFinite(n) ? n : 0
 }
 
-const pickFirstVariant = (product) => {
-  const variants = Array.isArray(product?.variants) ? product.variants : []
-  return variants[0] || {}
-}
-
-const toImages = (variant) => {
+const toImages = (product) => {
   const out = []
-  if (Array.isArray(variant?.images)) out.push(...variant.images)
-  if (variant?.image) out.push(variant.image)
+  if (Array.isArray(product?.images)) out.push(...product.images)
+  if (product?.image) out.push(product.image)
   return out.map(resolveAssetUrl).filter(Boolean)
 }
 
@@ -31,13 +26,12 @@ const toCategoryLabel = (product) => {
 
 export const normalizeProduct = (product) => {
   if (!product) return null
-  const v = pickFirstVariant(product)
-  const making = asNumber(v?.makingCost?.amount)
-  const other = asNumber(v?.otherCharges?.amount)
+  const making = asNumber(product?.makingCost?.amount)
+  const other = asNumber(product?.otherCharges?.amount)
   const priceInr = making + other
   const compareAtInr = asNumber(product?.attributes?.compareAtInr)
 
-  const stock = asNumber(v?.stock)
+  const stock = asNumber(product?.stock)
   const inStock = stock > 0
 
   const category = toCategoryLabel(product)
@@ -59,6 +53,8 @@ export const normalizeProduct = (product) => {
     name: product.name || 'Product',
     description: product.description || '',
     category,
+    isFeatured: Boolean(product?.isFeatured),
+    isBestSeller: Boolean(product?.isBestSeller),
     priceInr,
     compareAtInr: compareAtInr > 0 ? compareAtInr : 0,
     metal,
@@ -69,18 +65,23 @@ export const normalizeProduct = (product) => {
     badge,
     rating: rating > 0 ? rating : 4.6,
     reviewsCount: reviewsCount > 0 ? reviewsCount : 0,
-    images: toImages(v),
+    images: toImages(product),
     highlights: toHighlights(product),
     theme
   }
 }
 
 export const productsService = {
-  async list({ page = 1, limit = 20, q = '' } = {}) {
+  async list({ page = 1, limit = 20, q = '', isActive = true, categoryId, subCategoryId, featured, bestSeller } = {}) {
     const params = new URLSearchParams()
     params.set('page', String(page))
     params.set('limit', String(limit))
     if (q) params.set('q', String(q))
+    if (isActive !== undefined) params.set('isActive', String(Boolean(isActive)))
+    if (categoryId) params.set('categoryId', String(categoryId))
+    if (subCategoryId) params.set('subCategoryId', String(subCategoryId))
+    if (featured !== undefined) params.set('featured', String(Boolean(featured)))
+    if (bestSeller !== undefined) params.set('bestSeller', String(Boolean(bestSeller)))
     const res = await api.get(`/api/products?${params.toString()}`)
     const list = Array.isArray(res?.data) ? res.data : []
     return {
@@ -97,4 +98,3 @@ export const productsService = {
     return { ok: Boolean(res?.ok), data: normalizeProduct(res?.data) }
   }
 }
-

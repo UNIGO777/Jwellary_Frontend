@@ -10,6 +10,10 @@ import AdminSubcategoryForm from './pages/AdminSubcategoryForm.jsx'
 import AdminPromocodes from './pages/AdminPromocodes.jsx'
 import AdminPromocodeForm from './pages/AdminPromocodeForm.jsx'
 import AdminOrders from './pages/AdminOrders.jsx'
+import AdminGoldRates from './pages/AdminGoldRates.jsx'
+import AdminSilverRates from './pages/AdminSilverRates.jsx'
+import AdminDiamondTypes from './pages/AdminDiamondTypes.jsx'
+import AdminDiamondPrices from './pages/AdminDiamondPrices.jsx'
 import AdminLayout from './components/AdminLayout.jsx'
 import { adminTokenStore } from '../services/index.js'
 
@@ -45,6 +49,10 @@ export default function AdminRoutes() {
         <Route path="promocodes" element={<AdminPromocodes />} />
         <Route path="promocodes/new" element={<AdminPromocodeForm />} />
         <Route path="promocodes/:id" element={<AdminPromocodeForm />} />
+        <Route path="gold-rates" element={<AdminGoldRates />} />
+        <Route path="silver-rates" element={<AdminSilverRates />} />
+        <Route path="diamond-types" element={<AdminDiamondTypes />} />
+        <Route path="diamond-prices" element={<AdminDiamondPrices />} />
       </Route>
 
       <Route path="*" element={<Navigate to="login" replace />} />

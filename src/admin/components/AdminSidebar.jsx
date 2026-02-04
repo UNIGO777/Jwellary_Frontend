@@ -111,6 +111,52 @@ export default function AdminSidebar({
             <path d="M14 9h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
           </svg>
         )
+      },
+      {
+        to: '/admin/gold-rates',
+        label: 'Gold Rates',
+        icon: (
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+            <path d="M7 7h10l-1 14H8L7 7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+            <path d="M9 7a3 3 0 0 1 6 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        )
+      },
+      {
+        to: '/admin/silver-rates',
+        label: 'Silver Rates',
+        icon: (
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+            <path d="M4 8h16v12H4V8Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+            <path d="M8 4h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            <path d="M8 12h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        )
+      },
+      {
+        to: '/admin/diamond-types',
+        label: 'Diamond Types',
+        icon: (
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+            <path
+              d="M12 3 4 9l8 12 8-12-8-6Z"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinejoin="round"
+            />
+            <path d="M4 9h16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        )
+      },
+      {
+        to: '/admin/diamond-prices',
+        label: 'Diamond Prices',
+        icon: (
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+            <path d="M12 3 4 9l8 12 8-12-8-6Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+            <path d="M9 12h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        )
       }
     ]
   }, [links])
@@ -165,4 +211,3 @@ export default function AdminSidebar({
     </aside>
   )
 }
-
