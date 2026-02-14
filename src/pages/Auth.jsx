@@ -111,7 +111,7 @@ export default function Auth() {
           className="rounded-2xl bg-white p-8 text-zinc-900 shadow-sm"
         >
           <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold tracking-wide text-zinc-900">EWITH JEWELLERY</div>
+            <div className="text-sm font-semibold tracking-wide text-zinc-900">OM ABHUSAN JWELLARY</div>
             <div className="rounded-full bg-zinc-100 p-1">
               <TabButton active={isSignup} onClick={() => switchMode('signup')}>
                 Sign up

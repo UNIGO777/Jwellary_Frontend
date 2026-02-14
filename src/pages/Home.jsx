@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { ApiError, productsService } from '../services/index.js'
-import { formatInr } from './products.data.js'
+import ProductCard from '../components/ProductCard.jsx'
 
 const MotionDiv = motion.div
 
@@ -65,9 +65,12 @@ export default function Home() {
           transition={{ duration: 1.5 }}
           className="absolute inset-0 h-full w-full"
         >
-          <img
-            src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=2070&auto=format&fit=crop"
-            alt="Hero Model"
+          <video
+            src="https://www.pexels.com/download/video/31757664/"
+            autoPlay
+            muted
+            loop
+            playsInline
             className="h-full w-full object-cover opacity-80"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-black/10" />
@@ -85,7 +88,7 @@ export default function Home() {
               <span className="h-1 w-1 rounded-full bg-white/70" aria-hidden="true" />
               Est. 2024
             </div>
-            <h1 className="mt-6 font-serif text-6xl font-medium leading-none tracking-tight drop-shadow-sm sm:text-8xl md:text-9xl">EWITH</h1>
+            <h1 className="mt-6 font-serif text-6xl font-medium leading-none tracking-tight drop-shadow-sm sm:text-8xl md:text-9xl">OM ABHUSAN</h1>
             <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/80 sm:text-lg">
               Everyday elegance, crafted to last. Explore curated designs for modern moments.
             </p>
@@ -130,39 +133,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 sm:gap-x-7 sm:gap-y-10 lg:grid-cols-4">
             {(loading ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}` })) : featuredProducts).map((product) => (
-              <Link key={product.id} to={`/products/${product.id}`} className="group block">
-                <div className="overflow-hidden border border-zinc-200 bg-white shadow-sm transition-all will-change-transform group-hover:-translate-y-0.5 group-hover:border-zinc-300 group-hover:shadow-md">
-                  <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
-                    {product.images?.[0] ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-zinc-100" />
-                    )}
-                    {product.id && product.id.startsWith('skeleton-') ? null : !product.inStock ? (
-                      <div className="absolute left-2 top-2 bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-900 backdrop-blur-sm">
-                        Sold Out
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="flex justify-between gap-4 p-3 sm:p-4">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-[13px] font-semibold uppercase tracking-wide text-zinc-900 sm:text-sm sm:whitespace-normal sm:overflow-visible">
-                        {product.name || ' '}
-                      </h3>
-                      <p className="mt-1 text-xs text-zinc-500">{product.category || ' '}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <span className="inline-flex items-center whitespace-nowrap border border-[#2b2118]/15 bg-[#fbf7f3] px-3 py-1 text-[13px] font-bold text-[#2b2118] sm:text-sm">
-                        {product.priceInr ? formatInr(product.priceInr) : ' '}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
+              <ProductCard key={product.id} product={product} elevated />
             ))}
           </div>
         </MotionSection>
@@ -216,69 +187,32 @@ export default function Home() {
       </section>
 
       {/* Section 3: Bestsellers */}
-      <section className="py-24">
-        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-          <MotionSection>
-            <div className="mb-12 flex flex-col justify-between gap-8 md:flex-row md:items-end">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Most loved</div>
-                <h2 className="mt-3 font-serif text-4xl leading-tight text-zinc-900 md:text-5xl">Bestsellers</h2>
-              </div>
-              <div className="max-w-sm text-sm leading-relaxed text-zinc-600 hidden md:block">
-                  Pieces loved by you. Discover the favorites that have found their way into collections around the world.
+      <section className="border-t border-zinc-100 px-4 py-20 sm:px-6 lg:px-8">
+        <MotionSection className="mx-auto max-w-screen-2xl">
+          <div className="mb-12 flex flex-col justify-between gap-8 md:flex-row md:items-end">
+            <div className="max-w-md">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Most loved</div>
+              <h2 className="mt-3 font-serif text-3xl leading-tight text-zinc-900 sm:text-4xl md:text-5xl">Bestsellers</h2>
+            </div>
+            <div className="max-w-sm text-sm leading-relaxed text-zinc-600">
+              Pieces loved by you. Discover the favorites that have found their way into collections around the world.
+              <div className="mt-4">
+                <Link
+                  to="/bestsellers"
+                  className="inline-flex h-11 items-center border border-zinc-200 bg-white px-5 text-xs font-semibold uppercase tracking-widest text-zinc-900 transition hover:bg-zinc-50"
+                >
+                  Shop all
+                </Link>
               </div>
             </div>
-          </MotionSection>
-        </div>
+          </div>
 
-        <MotionSection delay={0.2}>
-          <div className="grid grid-cols-1 gap-x-8 gap-y-12 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
-            {(loading ? Array.from({ length: 8 }).map((_, i) => ({ id: `skeleton-${i}` })) : bestsellers).map((product) => (
-              <Link 
-                key={product.id} 
-                to={product.id ? `/products/${product.id}` : '#'} 
-                className="group block"
-              >
-                <div className="relative aspect-[4/5] overflow-hidden bg-zinc-100">
-                  {product.images?.[0] ? (
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-zinc-100" />
-                  )}
-                  {product.badge && (
-                     <div className="absolute left-3 top-3 bg-zinc-900/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-                      {product.badge}
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4 flex justify-between gap-4">
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-semibold uppercase tracking-wide text-zinc-900 sm:whitespace-normal sm:overflow-visible">
-                      {product.name || ' '}
-                    </h3>
-                    <p className="mt-1 text-xs text-zinc-500">{product.category || ' '}</p>
-                  </div>
-                  <div className="text-right text-sm font-medium text-zinc-900">{product.priceInr ? formatInr(product.priceInr) : ' '}</div>
-                </div>
-              </Link>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 sm:gap-x-7 sm:gap-y-10 lg:grid-cols-4">
+            {(loading ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}` })) : bestsellers).map((product) => (
+              <ProductCard key={product.id} product={product} elevated />
             ))}
           </div>
         </MotionSection>
-        
-        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-          <div className="mt-10 text-center">
-            <Link
-              to="/bestsellers"
-              className="inline-flex h-11 items-center border border-zinc-200 bg-white px-5 text-xs font-semibold uppercase tracking-widest text-zinc-900 transition hover:bg-zinc-50"
-            >
-              See more bestsellers
-            </Link>
-          </div>
-        </div>
       </section>
 
       {/* Section 4: We believe in our process */}

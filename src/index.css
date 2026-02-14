@@ -7,3 +7,42 @@ body,
 #root {
   height: 100%;
 }
+
+.price-range {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+  outline: none;
+}
+
+.price-range::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+}
+
+.price-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #2b2118;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.18);
+}
+
+.price-range::-moz-range-track {
+  height: 4px;
+  background: transparent;
+}
+
+.price-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #2b2118;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.18);
+}

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ApiError, ordersService } from '../services/index.js'
 import { formatInr } from './products.data.js'
 import PageLoader from '../components/PageLoader.jsx'
@@ -64,7 +64,7 @@ export default function OrderDetails() {
     }
   }, [navigate, orderId])
 
-  const items = useMemo(() => (Array.isArray(order?.items) ? order.items : []), [order?.items])
+  const items = Array.isArray(order?.items) ? order.items : []
   const status = order?.status ? String(order.status) : 'pending'
   const createdAt = order?.createdAt ? formatDate(order.createdAt) : ''
 

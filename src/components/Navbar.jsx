@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { Heart, ShoppingBag, User } from 'lucide-react'
 import { categoriesService, subcategoriesService, tokenStore } from '../services/index.js'
+import Logo from '../assets/logo.png'
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -143,17 +144,17 @@ export default function Navbar({ isHome }) {
     <header
       className={cn(
         'fixed inset-x-0 top-0 z-40 border-b transition-colors duration-300',
-        headerSolid ? 'border-zinc-200 bg-white/85 text-zinc-900 backdrop-blur' : 'border-transparent bg-transparent text-white'
+        headerSolid ? 'border-zinc-200 bg-white text-zinc-900 backdrop-blur' : 'border-transparent bg-transparent text-white'
       )}
     >
-      <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-3 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex items-center justify-between gap-4 px-3 py-4 sm:px-6 lg:px-8">
         <NavLink
           to="/"
           className={cn('text-sm font-semibold tracking-wide', headerSolid ? 'text-[#2b2118]' : 'text-white')}
           onClick={() => setMobileNavOpen(false)}
           end
         >
-          EWITH JWELLARY
+          <div className='flex items-center gap-2'><img src={Logo} className='w-10 '/> Om Abhushan</div>
         </NavLink>
 
         <nav className="hidden items-center gap-2 sm:flex">
@@ -187,7 +188,7 @@ export default function Navbar({ isHome }) {
                 <div className="grid grid-cols-12">
                   <div className="col-span-4 border-r border-zinc-100 bg-zinc-50/70">
                     <div className="p-3 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">Categories</div>
-                    <div className="max-h-[360px] overflow-auto p-2">
+                    <div className="max-h-[360px] overflow-auto p-2 ">
                       {categoryGroups.length ? (
                         categoryGroups.map((g) => (
                           <button
@@ -196,8 +197,8 @@ export default function Navbar({ isHome }) {
                             onClick={() => setActiveCategoryId(g.category._id)}
                             onFocus={() => setActiveCategoryId(g.category._id)}
                             className={cn(
-                              'flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold transition',
-                              activeCategoryId === g.category._id ? 'bg-white text-[#2b2118] shadow-sm' : 'text-zinc-700 hover:bg-white'
+                              'flex w-full items-center mb-1 justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold transition',
+                              activeCategoryId === g.category._id ? 'bg-black/10 text-[#2b2118] ' : 'text-zinc-700 hover:bg-black/10'
                             )}
                           >
                             <span className="truncate">{g.category.name}</span>

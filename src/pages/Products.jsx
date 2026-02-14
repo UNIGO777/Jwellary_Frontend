@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
-import { formatInr, formatPercentOff } from './products.data.js'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { formatInr } from './products.data.js'
 import { ApiError, cartService, categoriesService, productsService, subcategoriesService, wishlistStore } from '../services/index.js'
+import ProductCard from '../components/ProductCard.jsx'
 
 const MotionDiv = motion.div
 
@@ -26,36 +27,6 @@ const StarRow = ({ value = 0 }) => {
   )
 }
 
-const toCountMap = (items) => {
-  const map = new Map()
-  for (const it of items) map.set(it, (map.get(it) || 0) + 1)
-  return map
-}
-
-const toggleValue = (list, value) => (list.includes(value) ? list.filter((x) => x !== value) : [...list, value])
-
-const FilterRow = ({ label, count, checked, onChange }) => (
-  <label className="flex cursor-pointer items-center justify-between gap-3 py-2 text-sm text-zinc-700">
-    <span className="flex min-w-0 items-center gap-3">
-      <span
-        className={cn(
-          'grid h-4 w-4 place-items-center rounded border transition',
-          checked ? 'border-[#2b2118] bg-[#2b2118]' : 'border-zinc-300 bg-white'
-        )}
-      >
-        {checked ? (
-          <svg viewBox="0 0 24 24" className="h-3 w-3 text-white" fill="none" aria-hidden="true">
-            <path d="M5.5 12.2 10.3 17 18.5 7.8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ) : null}
-      </span>
-      <span className="truncate">{label}</span>
-    </span>
-    <span className="text-xs font-medium text-zinc-500">{count}</span>
-    <input type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
-  </label>
-)
-
 const FilterSection = ({ title, children, footer }) => (
   <div className="rounded-2xl border border-zinc-200 bg-white p-4">
     <div className="text-sm font-semibold text-zinc-900">{title}</div>
@@ -68,27 +39,50 @@ export default function Products() {
   const location = useLocation()
   const { categorySlug, subCategorySlug } = useParams()
   const navigate = useNavigate()
+  const pageSize = 30
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('Featured')
-  const [topCategory, setTopCategory] = useState('All')
-  const [onlyNew, setOnlyNew] = useState(false)
-  const [onlySale, setOnlySale] = useState(false)
   const [storageVersion, setStorageVersion] = useState(0)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const [allProducts, setAllProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
-  const [hasInitPrice, setHasInitPrice] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [total, setTotal] = useState(0)
 
-  const [categories, setCategories] = useState([])
-  const [metals, setMetals] = useState([])
-  const [stones, setStones] = useState([])
-  const [purities, setPurities] = useState([])
+  const loadMoreRef = useRef(null)
+  const pageRef = useRef(1)
+  const requestKeyRef = useRef(0)
+  const serverFiltersRef = useRef({ categoryId: '', subCategoryId: '' })
+
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState('')
+  const [categoryGroups, setCategoryGroups] = useState([])
+  const [catsError, setCatsError] = useState('')
+
+  const [selectedMaterial, setSelectedMaterial] = useState('')
+  const [selectedMaterialType, setSelectedMaterialType] = useState('')
+  const [materialTypes, setMaterialTypes] = useState({ gold: [], silver: [], diamond: [] })
+  const [materialTypesError, setMaterialTypesError] = useState('')
   const [inStockOnly, setInStockOnly] = useState(false)
   const [minRating, setMinRating] = useState(0)
+  const [minPrice, setMinPrice] = useState(null)
+  const [maxPrice, setMaxPrice] = useState(null)
+
+  const buildProductsUrl = ({ categoryId, subCategoryId } = {}) => {
+    const sp = new URLSearchParams()
+    if (categoryId) sp.set('categoryId', String(categoryId))
+    if (subCategoryId) sp.set('subCategoryId', String(subCategoryId))
+    const qs = sp.toString()
+    return `/products${qs ? `?${qs}` : ''}`
+  }
 
   useEffect(() => {
     let alive = true
+    const requestKey = requestKeyRef.current + 1
+    requestKeyRef.current = requestKey
     const sp = new URLSearchParams(location.search)
     const categoryIdFromSearch = (sp.get('categoryId') || '').trim()
     const subCategoryIdFromSearch = (sp.get('subCategoryId') || '').trim()
@@ -96,7 +90,14 @@ export default function Products() {
     queueMicrotask(() => {
       if (!alive) return
       setLoading(true)
+      setLoadingMore(false)
       setError('')
+      setHasMore(true)
+      setTotal(0)
+      pageRef.current = 1
+      setAllProducts([])
+      setMinPrice(null)
+      setMaxPrice(null)
     })
 
     const resolveFilters = async () => {
@@ -134,23 +135,34 @@ export default function Products() {
     }
 
     resolveFilters()
-      .then(({ categoryId, subCategoryId }) =>
-        productsService.list({
+      .then(({ categoryId, subCategoryId }) => {
+        if (!alive) return null
+        setSelectedCategoryId(categoryId || '')
+        setSelectedSubCategoryId(subCategoryId || '')
+        serverFiltersRef.current = { categoryId: categoryId || '', subCategoryId: subCategoryId || '' }
+        return productsService.list({
           page: 1,
-          limit: 200,
+          limit: pageSize,
           categoryId: categoryId || undefined,
           subCategoryId: subCategoryId || undefined
         })
-      )
+      })
       .then((res) => {
-        if (!alive) return
-        setAllProducts(Array.isArray(res?.data) ? res.data : [])
+        if (!alive || !res) return
+        if (requestKeyRef.current !== requestKey) return
+        const list = Array.isArray(res?.data) ? res.data : []
+        const nextTotal = Number(res?.total || 0)
+        setTotal(nextTotal)
+        setAllProducts(list)
+        setHasMore(nextTotal ? list.length < nextTotal : list.length >= pageSize)
       })
       .catch((err) => {
         if (!alive) return
         const message = err instanceof ApiError ? err.message : err?.message ? String(err.message) : 'Failed to load products'
         setError(message)
         setAllProducts([])
+        setHasMore(false)
+        setTotal(0)
       })
       .finally(() => {
         if (alive) setLoading(false)
@@ -158,7 +170,143 @@ export default function Products() {
     return () => {
       alive = false
     }
-  }, [location.search, categorySlug, subCategorySlug])
+  }, [location.search, categorySlug, subCategorySlug, pageSize])
+
+  useEffect(() => {
+    if (loading) return
+    if (!hasMore) return
+    const el = loadMoreRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (!entry?.isIntersecting) return
+        if (loadingMore) return
+        if (!hasMore) return
+        setLoadingMore(true)
+        const requestKey = requestKeyRef.current
+        const nextPage = pageRef.current + 1
+        const { categoryId, subCategoryId } = serverFiltersRef.current || {}
+        productsService
+          .list({
+            page: nextPage,
+            limit: pageSize,
+            categoryId: categoryId || undefined,
+            subCategoryId: subCategoryId || undefined
+          })
+          .then((res) => {
+            if (requestKeyRef.current !== requestKey) return
+            const list = Array.isArray(res?.data) ? res.data : []
+            const nextTotal = Number(res?.total || 0)
+            setTotal(nextTotal)
+            setAllProducts((prev) => {
+              const merged = prev.concat(list)
+              setHasMore(nextTotal ? merged.length < nextTotal : list.length >= pageSize)
+              return merged
+            })
+            pageRef.current = nextPage
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (requestKeyRef.current === requestKey) setLoadingMore(false)
+          })
+      },
+      { root: null, rootMargin: '400px 0px', threshold: 0.01 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, loading, loadingMore, pageSize])
+
+  useEffect(() => {
+    if (!mobileFiltersOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [mobileFiltersOpen])
+
+  useEffect(() => {
+    let alive = true
+    Promise.all([
+      categoriesService.list({ page: 1, limit: 200, isActive: true }),
+      subcategoriesService.list({ page: 1, limit: 500, isActive: true })
+    ])
+      .then(([cRes, sRes]) => {
+        if (!alive) return
+        setCatsError('')
+        const categories = Array.isArray(cRes?.data) ? cRes.data : []
+        const subcategories = Array.isArray(sRes?.data) ? sRes.data : []
+
+        const subByCategory = new Map()
+        for (const sc of subcategories) {
+          const key = sc?.category ? String(sc.category) : ''
+          if (!key) continue
+          const list = subByCategory.get(key) || []
+          list.push(sc)
+          subByCategory.set(key, list)
+        }
+
+        const groups = categories
+          .map((c) => {
+            const id = c?._id ? String(c._id) : ''
+            if (!id) return null
+            const subs = subByCategory.get(id) || []
+            if (!subs.length) return null
+            const nextSubs = subs
+              .slice()
+              .sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')))
+              .map((s) => ({
+                _id: s?._id ? String(s._id) : '',
+                name: s?.name ? String(s.name) : '',
+                slug: s?.slug ? String(s.slug) : ''
+              }))
+              .filter((s) => s._id && s.name)
+            if (!nextSubs.length) return null
+            return {
+              category: {
+                _id: id,
+                name: c?.name ? String(c.name) : '',
+                slug: c?.slug ? String(c.slug) : ''
+              },
+              subcategories: nextSubs
+            }
+          })
+          .filter(Boolean)
+          .sort((a, b) => String(a.category?.name || '').localeCompare(String(b.category?.name || '')))
+
+        setCategoryGroups(groups)
+      })
+      .catch((err) => {
+        if (!alive) return
+        const message = err?.message ? String(err.message) : 'Failed to load categories'
+        setCatsError(message)
+        setCategoryGroups([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    productsService
+      .materialTypes()
+      .then((res) => {
+        if (!alive) return
+        setMaterialTypesError('')
+        setMaterialTypes(res?.data || { gold: [], silver: [], diamond: [] })
+      })
+      .catch((err) => {
+        if (!alive) return
+        const message = err instanceof ApiError ? err.message : err?.message ? String(err.message) : 'Failed to load material types'
+        setMaterialTypesError(message)
+        setMaterialTypes({ gold: [], silver: [], diamond: [] })
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const priceRange = useMemo(() => {
     const values = allProducts.map((p) => Number(p.priceInr || 0)).filter((n) => Number.isFinite(n) && n > 0)
@@ -167,82 +315,77 @@ export default function Products() {
     return { min, max }
   }, [allProducts])
 
-  const [minPrice, setMinPrice] = useState(() => priceRange.min)
-  const [maxPrice, setMaxPrice] = useState(() => priceRange.max)
+  const effectiveMinPrice = minPrice === null ? priceRange.min : minPrice
+  const effectiveMaxPrice = maxPrice === null ? priceRange.max : maxPrice
 
-  useEffect(() => {
-    if (hasInitPrice) return
-    if (!priceRange.max) return
-    queueMicrotask(() => {
-      setMinPrice(priceRange.min)
-      setMaxPrice(priceRange.max)
-      setHasInitPrice(true)
-    })
-  }, [priceRange.min, priceRange.max, hasInitPrice])
-
-  const categoryOptions = useMemo(() => {
-    const set = new Set(allProducts.map((p) => p.category).filter(Boolean))
-    return ['All', ...Array.from(set)]
-  }, [allProducts])
-
-  const categoryCounts = useMemo(() => toCountMap(allProducts.map((p) => p.category).filter(Boolean)), [allProducts])
-  const metalCounts = useMemo(() => toCountMap(allProducts.map((p) => p.metal).filter(Boolean)), [allProducts])
-  const stoneCounts = useMemo(() => toCountMap(allProducts.map((p) => p.stone).filter(Boolean)), [allProducts])
-  const purityCounts = useMemo(() => toCountMap(allProducts.map((p) => p.purity).filter(Boolean)), [allProducts])
-
-  const metalOptions = useMemo(() => Array.from(new Set(allProducts.map((p) => p.metal))).filter(Boolean), [allProducts])
-  const stoneOptions = useMemo(() => Array.from(new Set(allProducts.map((p) => p.stone))).filter(Boolean), [allProducts])
-  const purityOptions = useMemo(() => Array.from(new Set(allProducts.map((p) => p.purity))).filter(Boolean), [allProducts])
+  const materialTypeOptions = useMemo(() => {
+    if (!selectedMaterial) return []
+    const list = materialTypes?.[selectedMaterial]
+    return Array.isArray(list) ? list : []
+  }, [materialTypes, selectedMaterial])
 
   const clearAll = () => {
+    navigate('/products')
     setQuery('')
     setSort('Featured')
-    setTopCategory('All')
-    setOnlyNew(false)
-    setOnlySale(false)
-    setCategories([])
-    setMetals([])
-    setStones([])
-    setPurities([])
+    setSelectedMaterial('')
+    setSelectedMaterialType('')
     setInStockOnly(false)
     setMinRating(0)
-    setMinPrice(priceRange.min)
-    setMaxPrice(priceRange.max)
+    setMinPrice(null)
+    setMaxPrice(null)
+    setMobileFiltersOpen(false)
   }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const minP = Math.max(0, Number(minPrice || 0))
-    const maxP = Math.max(minP, Number(maxPrice || 0))
+    const minP = Math.max(0, Number(effectiveMinPrice || 0))
+    const maxP = Math.max(minP, Number(effectiveMaxPrice || 0))
 
     return allProducts.filter((p) => {
-      const matchesQuery = !q || `${p.name} ${p.category} ${p.metal} ${p.stone} ${p.purity}`.toLowerCase().includes(q)
-      const matchesTopCategory = topCategory === 'All' || p.category === topCategory
-      const matchesCategories = categories.length === 0 || categories.includes(p.category)
-      const matchesMetals = metals.length === 0 || metals.includes(p.metal)
-      const matchesStones = stones.length === 0 || stones.includes(p.stone)
-      const matchesPurities = purities.length === 0 || purities.includes(p.purity)
+      const matchesQuery = !q || `${p.name} ${p.category} ${p.metal} ${p.purity} ${p.material}`.toLowerCase().includes(q)
+      const matchesMaterial = !selectedMaterial || p.material === selectedMaterial
+      const matchesMaterialType = !selectedMaterialType || String(p.materialType || '') === String(selectedMaterialType)
       const matchesStock = !inStockOnly || Boolean(p.inStock)
       const matchesRating = !minRating || Number(p.rating || 0) >= minRating
       const matchesPrice = Number(p.priceInr || 0) >= minP && Number(p.priceInr || 0) <= maxP
-      const isSale = Boolean(p.compareAtInr) && Number(p.compareAtInr) > Number(p.priceInr)
-      const matchesSale = !onlySale || isSale
-      const matchesNew = !onlyNew || p.badge === 'New'
       return (
         matchesQuery &&
-        matchesTopCategory &&
-        matchesCategories &&
-        matchesMetals &&
-        matchesStones &&
-        matchesPurities &&
+        matchesMaterial &&
+        matchesMaterialType &&
         matchesStock &&
         matchesRating &&
-        matchesPrice &&
-        matchesSale &&
-        matchesNew
+        matchesPrice
       )
     })
-  }, [query, topCategory, categories, metals, stones, purities, inStockOnly, minRating, minPrice, maxPrice, onlySale, onlyNew, allProducts])
+  }, [query, selectedMaterial, selectedMaterialType, inStockOnly, minRating, effectiveMinPrice, effectiveMaxPrice, allProducts])
+
+  const pricePct = useMemo(() => {
+    const min = Math.max(0, Number(priceRange.min || 0))
+    const max = Math.max(min, Number(priceRange.max || 0))
+    const denom = Math.max(1, max - min)
+    const lo = Math.min(Math.max(Number(effectiveMinPrice || min), min), max)
+    const hi = Math.min(Math.max(Number(effectiveMaxPrice || max), min), max)
+    const left = ((lo - min) / denom) * 100
+    const right = ((hi - min) / denom) * 100
+    return { min, max, lo, hi, left, right }
+  }, [priceRange.min, priceRange.max, effectiveMinPrice, effectiveMaxPrice])
+
+  const selectedSubcategories = useMemo(() => {
+    if (!selectedCategoryId) return []
+    return categoryGroups.find((g) => g.category._id === selectedCategoryId)?.subcategories || []
+  }, [categoryGroups, selectedCategoryId])
+
+  const shopByCategoryGroup = useMemo(() => {
+    if (!categoryGroups.length) return null
+    if (selectedCategoryId) return categoryGroups.find((g) => g.category._id === selectedCategoryId) || categoryGroups[0]
+    return categoryGroups[0]
+  }, [categoryGroups, selectedCategoryId])
+
+  const selectedCategoryLabel = useMemo(() => {
+    if (!selectedCategoryId) return 'All products'
+    return categoryGroups.find((g) => g.category._id === selectedCategoryId)?.category?.name || 'Category'
+  }, [selectedCategoryId, categoryGroups])
 
   const results = useMemo(() => {
     const base = filtered.slice()
@@ -258,13 +401,234 @@ export default function Products() {
     return new Set(wishlistStore.getIds())
   }, [storageVersion])
 
-  const bannerImage = 'https://unsplash.com/photos/2zHQhfEpisc/download?force=true&w=2400'
-  const bannerSideImage = 'https://unsplash.com/photos/Lqfqsij4EvQ/download?force=true&w=1800'
+  const bannerImage = 'https://images.unsplash.com/photo-1605100804567-1ffe942b5cd6?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+  const bannerSideImage = 'https://images.unsplash.com/photo-1613945407943-59cd755fd69e?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+
+  const filtersPanel = (
+    <div className="space-y-4">
+      <FilterSection
+        title="Filters"
+        footer={
+          <button
+            type="button"
+            onClick={clearAll}
+            className="w-full rounded-xl bg-[#2b2118] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1f1711]"
+          >
+            Reset all
+          </button>
+        }
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setInStockOnly((v) => !v)}
+            className={cn(
+              'rounded-xl border px-3 py-2 text-xs font-semibold',
+              inStockOnly ? 'border-[#2b2118] bg-[#2b2118] text-white' : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
+            )}
+          >
+            In stock
+          </button>
+        </div>
+      </FilterSection>
+
+      {selectedCategoryId ? (
+        <FilterSection
+          title="Subcategory"
+          footer={
+            selectedSubCategoryId ? (
+              <button
+                type="button"
+                onClick={() => navigate(buildProductsUrl({ categoryId: selectedCategoryId }))}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-[#fbf7f3]"
+              >
+                Clear subcategory
+              </button>
+            ) : null
+          }
+        >
+          {selectedSubcategories.length ? (
+            selectedSubcategories.slice(0, 10).map((sc) => (
+              <label key={sc._id} className="flex cursor-pointer items-center justify-between gap-3 py-2 text-sm text-zinc-700">
+                <span className="flex min-w-0 items-center gap-3">
+                  <span
+                    className={cn(
+                      'grid h-4 w-4 place-items-center rounded border transition',
+                      selectedSubCategoryId === sc._id ? 'border-[#2b2118] bg-[#2b2118]' : 'border-zinc-300 bg-white'
+                    )}
+                  >
+                    {selectedSubCategoryId === sc._id ? (
+                      <svg viewBox="0 0 24 24" className="h-3 w-3 text-white" fill="none" aria-hidden="true">
+                        <path
+                          d="M5.5 12.2 10.3 17 18.5 7.8"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : null}
+                  </span>
+                  <span className="truncate">{sc.name}</span>
+                </span>
+                <input
+                  type="radio"
+                  name="subcategory"
+                  checked={selectedSubCategoryId === sc._id}
+                  onChange={() => navigate(buildProductsUrl({ categoryId: selectedCategoryId, subCategoryId: sc._id }))}
+                  className="sr-only"
+                />
+              </label>
+            ))
+          ) : (
+            <div className="text-sm text-zinc-600">No subcategories found.</div>
+          )}
+        </FilterSection>
+      ) : (
+        <FilterSection title="Subcategory">
+          <div className="text-sm text-zinc-600">{catsError ? catsError : 'Select a category to see subcategories.'}</div>
+        </FilterSection>
+      )}
+
+      <FilterSection title="Metal">
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { k: 'gold', label: 'Gold' },
+            { k: 'silver', label: 'Silver' },
+            { k: 'diamond', label: 'Diamond' }
+          ].map((m) => (
+            <button
+              key={m.k}
+              type="button"
+              onClick={() => {
+                setSelectedMaterial((prev) => (prev === m.k ? '' : m.k))
+                setSelectedMaterialType('')
+              }}
+              className={cn(
+                'rounded-xl border px-3 py-2 text-xs font-semibold transition',
+                selectedMaterial === m.k ? 'border-[#2b2118] bg-[#2b2118] text-white' : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </FilterSection>
+
+      {selectedMaterial ? (
+        <FilterSection
+          title={selectedMaterial === 'gold' ? 'Gold Type' : selectedMaterial === 'silver' ? 'Silver Type' : 'Diamond Type'}
+          footer={
+            selectedMaterialType ? (
+              <button
+                type="button"
+                onClick={() => setSelectedMaterialType('')}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-[#fbf7f3]"
+              >
+                Clear type
+              </button>
+            ) : null
+          }
+        >
+          {materialTypesError ? (
+            <div className="text-sm text-zinc-600">{materialTypesError}</div>
+          ) : materialTypeOptions.length ? (
+            <div className="grid gap-2">
+              {materialTypeOptions.slice(0, 10).map((t) => {
+                const val = String(t?.value ?? '')
+                const label = String(t?.label ?? '')
+                if (!val || !label) return null
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setSelectedMaterialType(val)}
+                    className={cn(
+                      'rounded-xl border px-3 py-2 text-left text-xs font-semibold transition',
+                      selectedMaterialType === val
+                        ? 'border-[#2b2118] bg-[#2b2118] text-white'
+                        : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-sm text-zinc-600">No types found.</div>
+          )}
+        </FilterSection>
+      ) : null}
+
+      <FilterSection title="Price">
+        <div className="flex items-center justify-between gap-3 text-xs font-semibold text-zinc-700">
+          <div className="rounded-full border border-zinc-200 bg-white px-3 py-1">{formatInr(Number(effectiveMinPrice || 0))}</div>
+          <div className="text-zinc-400">—</div>
+          <div className="rounded-full border border-zinc-200 bg-white px-3 py-1">{formatInr(Number(effectiveMaxPrice || 0))}</div>
+        </div>
+
+        <div className="relative mt-4 h-10">
+          <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-zinc-200" />
+          <div className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#2b2118]" style={{ left: `${pricePct.left}%`, right: `${100 - pricePct.right}%` }} />
+          <input
+            type="range"
+            min={pricePct.min}
+            max={pricePct.max}
+            step={100}
+            value={pricePct.lo}
+            onChange={(e) => {
+              const next = Math.min(Number(e.target.value), Number(effectiveMaxPrice || 0))
+              setMinPrice(next)
+            }}
+            className="price-range absolute inset-0 w-full appearance-none bg-transparent"
+          />
+          <input
+            type="range"
+            min={pricePct.min}
+            max={pricePct.max}
+            step={100}
+            value={pricePct.hi}
+            onChange={(e) => {
+              const next = Math.max(Number(e.target.value), Number(effectiveMinPrice || 0))
+              setMaxPrice(next)
+            }}
+            className="price-range absolute inset-0 w-full appearance-none bg-transparent"
+          />
+        </div>
+      </FilterSection>
+
+      <FilterSection title="Rating">
+        <div className="grid grid-cols-2 gap-2">
+          {[0, 4, 4.5, 4.8].map((r) => (
+            <button
+              key={String(r)}
+              type="button"
+              onClick={() => setMinRating(r)}
+              className={cn(
+                'rounded-xl border px-3 py-2 text-xs font-semibold',
+                minRating === r ? 'border-[#2b2118] bg-[#2b2118] text-white' : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
+              )}
+            >
+              {r ? (
+                <span className="inline-flex items-center gap-2">
+                  <StarRow value={r} />
+                  <span>{r}+</span>
+                </span>
+              ) : (
+                'Any'
+              )}
+            </button>
+          ))}
+        </div>
+      </FilterSection>
+    </div>
+  )
 
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
-        <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto  px-4 py-8 sm:px-6 lg:px-8">
           {error ? (
             <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div>
           ) : null}
@@ -273,49 +637,35 @@ export default function Products() {
             <div className="border-b border-zinc-200 p-4 sm:p-5">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative">
-                    <select
-                      value={topCategory}
-                      onChange={(e) => setTopCategory(e.target.value)}
-                      className="h-10 appearance-none rounded-full border border-zinc-200 bg-white px-4 pr-10 text-sm font-semibold text-zinc-900 outline-none hover:bg-[#fbf7f3]"
+                  <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/products')}
+                      className={cn(
+                        'h-10 rounded-full border px-4 text-sm font-semibold transition',
+                        !selectedCategoryId
+                          ? 'border-[#2b2118] bg-[#2b2118] text-white'
+                          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
+                      )}
                     >
-                      {categoryOptions.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400">
-                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-                        <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
+                      All
+                    </button>
+                    {categoryGroups.slice(0, 8).map((g) => (
+                      <button
+                        key={g.category._id}
+                        type="button"
+                        onClick={() => navigate(buildProductsUrl({ categoryId: g.category._id }))}
+                        className={cn(
+                          'h-10 rounded-full border px-4 text-sm font-semibold transition',
+                          selectedCategoryId === g.category._id
+                            ? 'border-[#2b2118] bg-[#2b2118] text-white'
+                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
+                        )}
+                      >
+                        {g.category.name}
+                      </button>
+                    ))}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setOnlyNew((v) => !v)}
-                    className={cn(
-                      'h-10 rounded-full border px-4 text-sm font-semibold transition',
-                      onlyNew
-                        ? 'border-[#2b2118] bg-[#2b2118] text-white'
-                        : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
-                    )}
-                  >
-                    New Arrivals
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOnlySale((v) => !v)}
-                    className={cn(
-                      'h-10 rounded-full border px-4 text-sm font-semibold transition',
-                      onlySale
-                        ? 'border-[#2b2118] bg-[#2b2118] text-white'
-                        : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
-                    )}
-                  >
-                    Sale
-                  </button>
                 </div>
 
                 <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
@@ -348,6 +698,14 @@ export default function Products() {
 
                   <button
                     type="button"
+                    onClick={() => setMobileFiltersOpen(true)}
+                    className="h-10 w-full rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-[#fbf7f3] lg:hidden"
+                  >
+                    Filters
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={clearAll}
                     className="h-10 w-full rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-[#fbf7f3] sm:w-auto"
                   >
@@ -358,160 +716,36 @@ export default function Products() {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <aside className="lg:col-span-3">
-              <div className="space-y-4">
-                <FilterSection
-                  title="Filters"
-                  footer={
-                    <button
-                      type="button"
-                      onClick={clearAll}
-                      className="w-full rounded-xl bg-[#2b2118] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1f1711]"
-                    >
-                      Reset all
-                    </button>
-                  }
-                >
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setInStockOnly((v) => !v)}
-                      className={cn(
-                        'rounded-xl border px-3 py-2 text-xs font-semibold',
-                        inStockOnly
-                          ? 'border-[#2b2118] bg-[#2b2118] text-white'
-                          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
-                      )}
-                    >
-                      In stock
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setOnlySale((v) => !v)}
-                      className={cn(
-                        'rounded-xl border px-3 py-2 text-xs font-semibold',
-                        onlySale
-                          ? 'border-[#2b2118] bg-[#2b2118] text-white'
-                          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
-                      )}
-                    >
-                      On sale
-                    </button>
-                  </div>
-                </FilterSection>
-
-                <FilterSection
-                  title="Category"
-                  footer={
-                    categoryOptions.length > 7 ? (
-                      <button
-                        type="button"
-                        onClick={() => setCategories(categoryOptions.filter((c) => c !== 'All'))}
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-[#fbf7f3]"
-                      >
-                        Show more
-                      </button>
-                    ) : null
-                  }
-                >
-                  {(categoryOptions.filter((c) => c !== 'All').slice(0, 7)).map((c) => (
-                    <FilterRow
-                      key={c}
-                      label={c}
-                      count={categoryCounts.get(c) || 0}
-                      checked={categories.includes(c)}
-                      onChange={() => setCategories((prev) => toggleValue(prev, c))}
-                    />
-                  ))}
-                </FilterSection>
-
-                <FilterSection title="Metal">
-                  {metalOptions.slice(0, 6).map((m) => (
-                    <FilterRow
-                      key={m}
-                      label={m}
-                      count={metalCounts.get(m) || 0}
-                      checked={metals.includes(m)}
-                      onChange={() => setMetals((prev) => toggleValue(prev, m))}
-                    />
-                  ))}
-                </FilterSection>
-
-                <FilterSection title="Stone">
-                  {stoneOptions.slice(0, 6).map((s) => (
-                    <FilterRow
-                      key={s}
-                      label={s}
-                      count={stoneCounts.get(s) || 0}
-                      checked={stones.includes(s)}
-                      onChange={() => setStones((prev) => toggleValue(prev, s))}
-                    />
-                  ))}
-                </FilterSection>
-
-                <FilterSection title="Purity">
-                  {purityOptions.slice(0, 6).map((p) => (
-                    <FilterRow
-                      key={p}
-                      label={p}
-                      count={purityCounts.get(p) || 0}
-                      checked={purities.includes(p)}
-                      onChange={() => setPurities((prev) => toggleValue(prev, p))}
-                    />
-                  ))}
-                </FilterSection>
-
-                <FilterSection title="Price">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <div className="text-xs font-semibold text-zinc-600">Min</div>
-                      <input
-                        value={String(minPrice)}
-                        onChange={(e) => setMinPrice(e.target.value.replace(/[^\d]/g, ''))}
-                        className="mt-2 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300"
-                        inputMode="numeric"
-                      />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-zinc-600">Max</div>
-                      <input
-                        value={String(maxPrice)}
-                        onChange={(e) => setMaxPrice(e.target.value.replace(/[^\d]/g, ''))}
-                        className="mt-2 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300"
-                        inputMode="numeric"
-                      />
-                    </div>
-                  </div>
-                </FilterSection>
-
-                <FilterSection title="Rating">
-                  <div className="grid grid-cols-2 gap-2">
-                    {[0, 4, 4.5, 4.8].map((r) => (
-                      <button
-                        key={String(r)}
-                        type="button"
-                        onClick={() => setMinRating(r)}
-                        className={cn(
-                          'rounded-xl border px-3 py-2 text-xs font-semibold',
-                          minRating === r
-                            ? 'border-[#2b2118] bg-[#2b2118] text-white'
-                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
-                        )}
-                      >
-                        {r ? (
-                          <span className="inline-flex items-center gap-2">
-                            <StarRow value={r} />
-                            <span>{r}+</span>
-                          </span>
-                        ) : (
-                          'Any'
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </FilterSection>
+          {mobileFiltersOpen ? (
+            <div className="fixed inset-0 z-50 bg-white">
+              <div className="flex h-full flex-col">
+                <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-4">
+                  <div className="text-base font-semibold text-zinc-900">Filters</div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileFiltersOpen(false)}
+                    className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-4">{filtersPanel}</div>
+                <div className="border-t border-zinc-200 p-4">
+                  <button
+                    type="button"
+                    onClick={() => setMobileFiltersOpen(false)}
+                    className="w-full rounded-xl bg-[#2b2118] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1f1711]"
+                  >
+                    View products
+                  </button>
+                </div>
               </div>
+            </div>
+          ) : null}
+
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <aside className="hidden lg:block lg:col-span-3 lg:sticky lg:top-24 lg:self-start">
+              <div className="lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-2">{filtersPanel}</div>
             </aside>
 
             <section className="lg:col-span-9">
@@ -519,33 +753,16 @@ export default function Products() {
                 <div className="grid grid-cols-1 gap-0 lg:grid-cols-2">
                   <div className="relative min-h-[240px] bg-zinc-100 lg:min-h-[320px]">
                     <img src={bannerImage} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/65 to-white/25" />
                   </div>
                   <div className="p-6 sm:p-8">
                     <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Collections</div>
                     <div className="mt-3 text-2xl font-semibold leading-tight tracking-tight text-zinc-900 sm:text-3xl">
                       Explore the various collection
                       <br />
-                      of Ewith Jewellery
+                      of Om Abhusan Jwellary
                     </div>
                     <div className="mt-3 max-w-md text-sm leading-6 text-zinc-600">
                       Don&apos;t miss out on stunning designs—crafted for daily elegance and special moments.
-                    </div>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setOnlyNew(true)}
-                        className="rounded-xl bg-[#2b2118] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1f1711]"
-                      >
-                        New arrivals
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setOnlySale(true)}
-                        className="rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 hover:bg-[#fbf7f3]"
-                      >
-                        Sale picks
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -554,14 +771,16 @@ export default function Products() {
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-sm font-semibold text-zinc-900">Product List</div>
-                  <div className="mt-1 text-xs text-zinc-500">{loading ? 'Loading...' : `${results.length} items`}</div>
+                  <div className="mt-1 text-xs text-zinc-500">
+                    {loading ? 'Loading...' : `${results.length} shown • ${allProducts.length}${total ? ` of ${total}` : ''}`}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="hidden h-10 items-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 sm:flex">
-                    {topCategory === 'All' ? 'All products' : topCategory}
+                    {selectedCategoryLabel}
                   </div>
                   <div className="hidden h-10 items-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 sm:flex">
-                    {formatInr(minPrice)} - {formatInr(maxPrice)}
+                    {formatInr(effectiveMinPrice)} - {formatInr(effectiveMaxPrice)}
                   </div>
                 </div>
               </div>
@@ -573,145 +792,108 @@ export default function Products() {
               ) : null}
 
               <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3">
-                {results.map((p, idx) => {
-                  const percentOff = formatPercentOff(p)
-                  const isSale = Boolean(p.compareAtInr) && Number(p.compareAtInr) > Number(p.priceInr)
-                  const isWishlisted = wishlistIds.has(p.id)
-                  return (
-                    <MotionDiv
-                      key={p.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.25, delay: Math.min(idx * 0.02, 0.2) }}
-                      className="group"
-                    >
-                      <Link to={`/products/${p.id}`} className="block">
-                        <div className="overflow-hidden border border-zinc-200 bg-white transition-colors group-hover:border-zinc-300">
-                          <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
-                          {p.images?.[0] ? (
-                            <img
-                              src={p.images[0]}
-                              alt={p.name}
-                              className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                              loading="lazy"
-                            />
-                          ) : null}
-
-                            <div className="absolute left-2 top-2 flex flex-wrap items-center gap-2">
-                              {!p.inStock ? (
-                                <span className="bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-900 backdrop-blur-sm">
-                                  Sold Out
-                                </span>
-                              ) : null}
-                              {p.badge ? (
-                                <span className="border border-zinc-200 bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-zinc-900 backdrop-blur-sm">
-                                  {p.badge}
-                                </span>
-                              ) : null}
-                              {isSale && percentOff ? (
-                                <span className="bg-[#2b2118] px-2.5 py-1 text-[11px] font-semibold text-white">{percentOff}</span>
-                              ) : null}
-                            </div>
-
-                            <div className="absolute right-2 top-2 flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
-                              <button
-                                type="button"
-                                className={cn(
-                                  'grid h-10 w-10 place-items-center rounded-full border bg-white/90 text-zinc-800 backdrop-blur hover:bg-white',
-                                  isWishlisted ? 'border-rose-200 text-rose-600' : 'border-zinc-200'
-                                )}
-                                aria-label="Wishlist"
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  wishlistStore.toggle(p.id)
-                                  setStorageVersion((v) => v + 1)
-                                }}
-                              >
-                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill={isWishlisted ? 'currentColor' : 'none'} aria-hidden="true">
-                                  <path
-                                    d="M12 20.5s-7.5-4.6-9.3-9.2C1.2 7.8 3.6 5 6.6 5c1.7 0 3.2.8 4.1 2 1-1.2 2.4-2 4.1-2 3 0 5.4 2.8 3.9 6.3C19.5 15.9 12 20.5 12 20.5Z"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                  />
-                                </svg>
-                              </button>
-                              <button
-                                type="button"
-                                disabled={!p.inStock}
-                                className={cn(
-                                  'grid h-10 w-10 place-items-center rounded-full border bg-white/90 text-zinc-800 backdrop-blur',
-                                  p.inStock ? 'border-zinc-200 hover:bg-white' : 'cursor-not-allowed border-zinc-200 text-zinc-300'
-                                )}
-                                aria-label="Quick add"
-                                onClick={async (e) => {
-                                  e.preventDefault()
-                                  if (!p.inStock) return
-                                  try {
-                                    await cartService.add(p.id)
-                                    setStorageVersion((v) => v + 1)
-                                  } catch (err) {
-                                    if (err instanceof ApiError && err.status === 401) {
-                                      navigate('/auth')
-                                      return
-                                    }
-                                  }
-                                }}
-                              >
-                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-                                  <path d="M8 8h13l-1.1 6.2a2 2 0 0 1-2 1.6H10.1a2 2 0 0 1-2-1.6L7.2 4.8H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                  <path d="M10 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" strokeWidth="1.5" />
-                                  <path d="M18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" strokeWidth="1.5" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between gap-4 p-3">
-                            <div className="min-w-0">
-                              <div className="truncate text-[13px] font-semibold uppercase tracking-wide text-zinc-900 sm:text-sm">{p.name}</div>
-                              <div className="mt-1 text-xs text-zinc-500">{p.category}</div>
-                            </div>
-                            <div className="shrink-0 text-right">
-                              <span className="inline-flex items-center whitespace-nowrap border border-[#2b2118]/15 bg-[#fbf7f3] px-3 py-1 text-[13px] font-bold text-[#2b2118] sm:text-sm">
-                                {formatInr(p.priceInr)}
-                              </span>
-                              {p.compareAtInr ? <div className="mt-1 text-xs text-zinc-500 line-through">{formatInr(p.compareAtInr)}</div> : null}
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </MotionDiv>
-                  )
-                })}
+                {results.map((p, idx) => (
+                  <MotionDiv
+                    key={p.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, delay: Math.min(idx * 0.02, 0.2) }}
+                    className="group"
+                  >
+                    <ProductCard
+                      product={p}
+                      showPercentOff
+                      showCompareAt
+                      showSizes
+                      isWishlisted={wishlistIds.has(p.id)}
+                      onToggleWishlist={() => {
+                        wishlistStore.toggle(p.id)
+                        setStorageVersion((v) => v + 1)
+                      }}
+                      onQuickAdd={async () => {
+                        if (!p.inStock) return
+                        try {
+                          await cartService.add(p.id)
+                          setStorageVersion((v) => v + 1)
+                        } catch (err) {
+                          if (err instanceof ApiError && err.status === 401) {
+                            navigate('/auth')
+                            return
+                          }
+                        }
+                      }}
+                    />
+                  </MotionDiv>
+                ))}
+                <div ref={loadMoreRef} className="col-span-full h-px" />
+                {loadingMore ? (
+                  <div className="col-span-full flex items-center justify-center py-4 text-sm font-semibold text-zinc-700">
+                    Loading more...
+                  </div>
+                ) : null}
               </div>
             </section>
           </div>
 
-          <div className="mt-8 overflow-hidden rounded-3xl border border-zinc-200 bg-white">
+          <div className="mt-8 overflow-hidden rounded-3xl hidden md:block border border-zinc-200 bg-white">
             <div className="grid grid-cols-1 gap-0 lg:grid-cols-2">
               <div className="relative min-h-[200px] bg-zinc-100 lg:min-h-[260px]">
                 <img src={bannerSideImage} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/50 to-white/20" />
+                
               </div>
               <div className="p-6 sm:p-8">
                 <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Need help choosing?</div>
                 <div className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900">Shop by category</div>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {categoryOptions.filter((c) => c !== 'All').slice(0, 6).map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setTopCategory(c)}
-                    className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-[#fbf7f3]"
-                    >
-                      {c}
-                    </button>
-                  ))}
+                  {categoryGroups.length ? (
+                    categoryGroups.slice(0, 6).map((g) => (
+                      <button
+                        key={g.category._id}
+                        type="button"
+                        onClick={() => navigate(buildProductsUrl({ categoryId: g.category._id }))}
+                        className={cn(
+                          'rounded-full border px-4 py-2 text-sm font-semibold transition',
+                          (shopByCategoryGroup?.category?._id || '') === g.category._id
+                            ? 'border-[#2b2118] bg-[#2b2118] text-white'
+                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-[#fbf7f3]'
+                        )}
+                      >
+                        {g.category.name}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-sm text-zinc-600">{catsError ? catsError : 'No categories yet.'}</div>
+                  )}
                 </div>
+
+                {shopByCategoryGroup?.subcategories?.length ? (
+                  <div className="mt-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Sub categories</div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {shopByCategoryGroup.subcategories.slice(0, 10).map((sc) => (
+                        <button
+                          key={sc._id}
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              buildProductsUrl({
+                                categoryId: shopByCategoryGroup.category._id,
+                                subCategoryId: sc._id
+                              })
+                            )
+                          }
+                          className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-[#fbf7f3]"
+                        >
+                          {sc.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 <div className="mt-6">
                   <button
                     type="button"
-                    onClick={() => setTopCategory('All')}
+                    onClick={() => navigate('/products')}
                     className="rounded-xl bg-[#2b2118] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1f1711]"
                   >
                     View all

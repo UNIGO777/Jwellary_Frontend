@@ -83,7 +83,7 @@ export default function AdminUsers() {
     return () => {
       alive = false
     }
-  }, [limit, page, q])
+  }, [limit, navigate, page, q])
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil((total || 0) / limit)), [limit, total])
 
@@ -99,7 +99,7 @@ export default function AdminUsers() {
   const toggleBlocked = async (id) => {
     const row = rows.find((r) => String(r?._id || r?.id) === String(id))
     if (!row) return
-    const nextBlocked = !Boolean(row.isBlocked)
+    const nextBlocked = !row.isBlocked
     setBusyKey(String(id))
     setError('')
     try {

@@ -97,8 +97,8 @@ export default function Profile() {
     try {
       const res = await mailService.send({
         to: user.email,
-        subject: 'EWITH • Test Email',
-        text: 'This is a test email from EWITH Jewellery.'
+        subject: 'Om Abhusan Jwellary • Test Email',
+        text: 'This is a test email from Om Abhusan Jwellary.'
       })
       setMailMessage(res?.id ? `Email sent (id: ${res.id})` : 'Email sent')
     } catch (err) {

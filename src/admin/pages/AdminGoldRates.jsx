@@ -20,6 +20,19 @@ const toDateInputValue = (value) => {
   return `${yyyy}-${mm}-${dd}`
 }
 
+const parseInrInput = (value) => {
+  if (value === undefined || value === null) return NaN
+  if (typeof value === 'number') return value
+  const raw = String(value).trim()
+  if (!raw) return NaN
+  const s = raw.toLowerCase().replace(/,/g, '')
+  const mult = s.endsWith('cr') ? 10000000 : s.endsWith('l') ? 100000 : s.endsWith('k') ? 1000 : 1
+  const cleaned = mult === 1 ? s : s.replace(/(cr|l|k)$/i, '')
+  const n = Number.parseFloat(cleaned)
+  if (!Number.isFinite(n)) return NaN
+  return n * mult
+}
+
 export default function AdminGoldRates() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -109,10 +122,14 @@ export default function AdminGoldRates() {
     setSaving(true)
     setError('')
     try {
+      const parsedRate = parseInrInput(ratePer10Gram)
+      const parsedPurity = parseInrInput(purity)
+      if (!Number.isFinite(parsedRate) || parsedRate <= 0) throw new Error('Invalid rate: enter a number like 150000')
+      if (!Number.isFinite(parsedPurity) || parsedPurity <= 0) throw new Error('Invalid purity')
       const payload = {
         carat: Number(carat),
-        purity: Number(purity),
-        ratePer10Gram: Number(ratePer10Gram)
+        purity: Number(parsedPurity),
+        ratePer10Gram: Number(parsedRate)
       }
       if (editingId) await api.put(`/api/admin/gold-rates/${editingId}`, withAdminAuth({ body: payload }))
       else await api.post('/api/admin/gold-rates', withAdminAuth({ body: payload }))

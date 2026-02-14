@@ -2,14 +2,13 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { formatInr, formatPercentOff } from './products.data.js'
-import { ApiError, cartService, productsService, wishlistStore } from '../services/index.js'
+import { ApiError, cartService, productsService, tokenStore, wishlistStore } from '../services/index.js'
 import PageLoader from '../components/PageLoader.jsx'
+import ProductCard from '../components/ProductCard.jsx'
 
 const MotionDiv = motion.div
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
-
-const sizes = ['S', 'M', 'L', 'XL']
 
 const StarRow = ({ value = 0 }) => {
   const rounded = Math.round(Number(value || 0) * 10) / 10
@@ -50,11 +49,19 @@ export default function Product() {
   const [related, setRelated] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [selectedSize, setSelectedSize] = useState('M')
+  const [selectedSize, setSelectedSize] = useState('')
   const [qty, setQty] = useState(1)
   const [tab, setTab] = useState('Description')
   const [imageIndex, setImageIndex] = useState(0)
   const [storageVersion, setStorageVersion] = useState(0)
+  const [reviews, setReviews] = useState([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsError, setReviewsError] = useState('')
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewBusy, setReviewBusy] = useState(false)
+  const [reviewMessage, setReviewMessage] = useState('')
+  const [reviewNeedsLogin, setReviewNeedsLogin] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -100,10 +107,44 @@ export default function Product() {
     }
   }, [productId])
 
+  useEffect(() => {
+    const list = product?.hasSizes && Array.isArray(product?.sizes) ? product.sizes : []
+    const next = list.length ? String(list[0]) : ''
+    setSelectedSize(next)
+  }, [product?.hasSizes, product?.sizes])
+
+  useEffect(() => {
+    if (tab !== 'Reviews') return
+    if (!productId) return
+    let alive = true
+    setReviewsLoading(true)
+    setReviewsError('')
+    productsService
+      .listReviews(productId)
+      .then((res) => {
+        if (!alive) return
+        setReviews(Array.isArray(res?.data) ? res.data : [])
+      })
+      .catch((err) => {
+        if (!alive) return
+        const message = err instanceof ApiError ? err.message : err?.message ? String(err.message) : 'Failed to load reviews'
+        setReviewsError(message)
+        setReviews([])
+      })
+      .finally(() => {
+        if (alive) setReviewsLoading(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [productId, tab])
+
   const isWishlisted = useMemo(() => {
     void storageVersion
     return productId ? wishlistStore.has(productId) : false
   }, [productId, storageVersion])
+
+  const isAuthed = Boolean(tokenStore.get())
 
   if (loading) {
     return (
@@ -148,11 +189,12 @@ export default function Product() {
   const images = product.images?.length ? product.images : []
   const thumbs = images.length ? images.slice(0, 4) : Array.from({ length: 4 }).map(() => '')
   const selectedImage = images[imageIndex] || images[0] || ''
+  const sizeOptions = product?.hasSizes && Array.isArray(product?.sizes) ? product.sizes.map((s) => String(s)).filter(Boolean) : []
 
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
-        <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
             <Link to="/" className="hover:text-zinc-900">
               Home
@@ -167,8 +209,8 @@ export default function Product() {
 
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
             <div className="lg:col-span-6">
-              <div className="rounded-3xl border border-zinc-200 bg-white p-4 sm:p-6">
-                <div className={cn('relative overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br', product.theme)}>
+              <div className=" border border-zinc-200 bg-white p-2">
+                <div className={cn('relative overflow-hidden max-h-[50vh] border border-zinc-200 bg-gradient-to-br', product.theme)}>
                   <div className="aspect-square w-full">
                     {selectedImage ? (
                       <img
@@ -198,7 +240,7 @@ export default function Product() {
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-4 gap-3">
+                <div className="mt-4 flex gap-3">
                   {thumbs.map((src, i) => (
                     <button
                       key={i}
@@ -206,13 +248,13 @@ export default function Product() {
                       disabled={!src}
                       onClick={() => (src ? setImageIndex(i) : null)}
                       className={cn(
-                        'overflow-hidden rounded-2xl border bg-gradient-to-br transition',
+                        'overflow-hidden border bg-gradient-to-br h-20 w-20 transition',
                         i === imageIndex ? 'border-zinc-900' : 'border-zinc-200 hover:border-zinc-300',
                         product.theme
                       )}
                       aria-label={`Thumbnail ${i + 1}`}
                     >
-                      <div className="aspect-square">
+                      <div className="h-20 w-20">
                         {src ? (
                           <img
                             src={src}
@@ -229,7 +271,7 @@ export default function Product() {
             </div>
 
             <div className="lg:col-span-6">
-              <div className="rounded-3xl border border-zinc-200 bg-white p-6">
+              <div className=" border border-zinc-200 bg-white p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">{product.category}</div>
@@ -281,31 +323,36 @@ export default function Product() {
                   <div className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-semibold text-white">{product.purity}</div>
                 </div>
 
-                <p className="mt-4 text-sm leading-6 text-zinc-600">{product.description}</p>
+                <div
+                  className="mt-4 text-sm leading-6 text-zinc-600"
+                  dangerouslySetInnerHTML={{ __html: product.description || '' }}
+                />
 
-                <div className="mt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs font-semibold text-zinc-900">Size</div>
-                    <div className="text-xs text-zinc-500">Selected: {selectedSize}</div>
+                {sizeOptions.length ? (
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold text-zinc-900">Sizes</div>
+                      <div className="text-xs text-zinc-500">{selectedSize ? `Selected: ${selectedSize}` : null}</div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {sizeOptions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setSelectedSize(s)}
+                          className={cn(
+                            'rounded-full border px-3 py-1 text-xs font-semibold transition',
+                            selectedSize === s
+                              ? 'border-zinc-900 bg-zinc-900 text-white'
+                              : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                          )}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {sizes.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSelectedSize(s)}
-                        className={cn(
-                          'rounded-full border px-3 py-1 text-xs font-semibold transition',
-                          selectedSize === s
-                            ? 'border-zinc-900 bg-zinc-900 text-white'
-                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
-                        )}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                ) : null}
 
                 <div className="mt-6">
                   <div className="flex items-center justify-between">
@@ -365,23 +412,12 @@ export default function Product() {
                   </button>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 gap-3">
-                  {[
-                    { title: 'Worldwide shipping', desc: 'Fast, trackable delivery options available.' },
-                    { title: 'Easy 30-day returns', desc: 'Hassle-free return & exchange support.' },
-                    { title: 'Money-back guarantee', desc: 'Secure payments with buyer protection.' }
-                  ].map((item) => (
-                    <div key={item.title} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                      <div className="text-sm font-semibold text-zinc-900">{item.title}</div>
-                      <div className="mt-1 text-xs leading-5 text-zinc-600">{item.desc}</div>
-                    </div>
-                  ))}
-                </div>
+                
               </div>
             </div>
           </div>
 
-          <div className="mt-10 rounded-3xl border border-zinc-200 bg-white">
+          <div className="mt-10  border border-zinc-200 bg-white">
             <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div className="inline-flex w-full rounded-full border border-zinc-200 bg-white p-1 sm:w-auto">
                 {['Description', 'Details', 'Shipping', 'Reviews'].map((t) => (
@@ -407,44 +443,18 @@ export default function Product() {
             <div className="p-4 sm:p-6">
               {tab === 'Description' ? (
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                  <div className="lg:col-span-8">
+                  <div className="lg:col-span-12">
                     <div className="text-sm font-semibold text-zinc-900">Product description</div>
-                    <p className="mt-3 text-sm leading-6 text-zinc-600">{product.description}</p>
+                    <div
+                      className="mt-3 text-sm leading-6 text-zinc-600"
+                      dangerouslySetInnerHTML={{ __html: product.description || '' }}
+                    />
                     <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                       {product.highlights.map((h) => (
                         <div key={h} className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
                           {h}
                         </div>
                       ))}
-                    </div>
-                  </div>
-                  <div className="lg:col-span-4">
-                    <div className="rounded-2xl border border-zinc-200 bg-[#fbf7f3] p-5">
-                      <div className="text-sm font-semibold text-zinc-900">Pair it with</div>
-                      <div className="mt-4 space-y-3">
-                        {related.slice(0, 2).map((p) => (
-                          <Link
-                            key={p.id}
-                            to={`/products/${p.id}`}
-                            className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 hover:bg-zinc-50"
-                          >
-                            <div className={cn('relative h-14 w-14 overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br', p.theme)}>
-                              {p.images?.[0] ? (
-                                <img
-                                  src={p.images[0]}
-                                  alt={p.name}
-                                  className="absolute inset-0 h-full w-full object-contain p-2"
-                                  loading="lazy"
-                                />
-                              ) : null}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="truncate text-sm font-semibold text-zinc-900">{p.name}</div>
-                              <div className="mt-1 text-xs text-zinc-500">{formatInr(p.priceInr)}</div>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -454,8 +464,8 @@ export default function Product() {
                 <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {[
                     { k: 'Category', v: product.category },
-                    { k: 'Metal', v: product.metal },
-                    { k: 'Stone', v: product.stone },
+                   
+                   
                     { k: 'Purity', v: product.purity },
                     { k: 'Weight', v: `${product.weightGrams} g` },
                     { k: 'Availability', v: product.inStock ? 'In stock' : 'Out of stock' },
@@ -478,7 +488,7 @@ export default function Product() {
               ) : null}
 
               {tab === 'Reviews' ? (
-                <div className="max-w-3xl">
+                <div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-zinc-900">Customer reviews</div>
@@ -490,25 +500,133 @@ export default function Product() {
                     </div>
                     <button
                       type="button"
+                      onClick={() => {
+                        setReviewMessage('')
+                        setReviewNeedsLogin(!isAuthed)
+                      }}
                       className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
                     >
                       Write a review
                     </button>
                   </div>
-                  <div className="mt-6 space-y-4">
-                    {[
-                      { name: 'Ayesha', text: 'Beautiful finish and feels premium. Perfect for daily wear.' },
-                      { name: 'Rohit', text: 'Packaging was great and delivery was quick. Loved it.' },
-                      { name: 'Neha', text: 'Looks exactly like the photos. Highly recommend.' }
-                    ].map((r) => (
-                      <div key={r.name} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-semibold text-zinc-900">{r.name}</div>
-                          <StarRow value={5} />
+
+                  <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+                    <div className="lg:col-span-5">
+                      {reviewNeedsLogin && !isAuthed ? (
+                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                          <div className="text-sm font-semibold text-zinc-900">Please login first</div>
+                          <div className="mt-2 text-sm text-zinc-600">Login to write a review for this product.</div>
+                          <div className="mt-4">
+                            <Link to="/auth" className="inline-flex rounded-xl bg-[#2b2118] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1f1711]">
+                              Login
+                            </Link>
+                          </div>
                         </div>
-                        <div className="mt-2 text-sm leading-6 text-zinc-600">{r.text}</div>
+                      ) : null}
+
+                      {isAuthed ? (
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                          <div className="text-sm font-semibold text-zinc-900">Write a review</div>
+                          {reviewMessage ? <div className="mt-3 text-sm font-medium text-emerald-700">{reviewMessage}</div> : null}
+                          <div className="mt-4">
+                            <div className="text-xs font-semibold text-zinc-600">Your rating</div>
+                            <div className="mt-2 flex items-center gap-1">
+                              {Array.from({ length: 5 }).map((_, i) => {
+                                const value = i + 1
+                                const active = value <= reviewRating
+                                return (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setReviewRating(value)}
+                                    className={cn('h-9 w-9 rounded-xl border transition', active ? 'border-amber-300 bg-amber-50' : 'border-zinc-200 bg-white hover:bg-zinc-50')}
+                                    aria-label={`Rate ${value} stars`}
+                                  >
+                                    <svg viewBox="0 0 24 24" className={cn('mx-auto h-4 w-4', active ? 'text-amber-500' : 'text-zinc-400')} fill={active ? 'currentColor' : 'none'} aria-hidden="true">
+                                      <path
+                                        d="M12 17.3 6.6 20l1-6-4.6-4.1 6.1-.9 2.9-5.5 2.9 5.5 6.1.9-4.6 4.1 1 6L12 17.3Z"
+                                        stroke="currentColor"
+                                        strokeWidth="1.2"
+                                      />
+                                    </svg>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <div className="text-xs font-semibold text-zinc-600">Your review</div>
+                            <textarea
+                              value={reviewComment}
+                              onChange={(e) => setReviewComment(e.target.value)}
+                              rows={4}
+                              className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-300"
+                              placeholder="Write your experience..."
+                            />
+                          </div>
+                          <div className="mt-4">
+                            <button
+                              type="button"
+                              disabled={reviewBusy}
+                              onClick={async () => {
+                                if (!productId) return
+                                setReviewBusy(true)
+                                setReviewsError('')
+                                setReviewMessage('')
+                                try {
+                                  const res = await productsService.upsertReview(productId, { rating: reviewRating, comment: reviewComment })
+                                  const nextRating = Number(res?.data?.rating)
+                                  const nextCount = Number(res?.data?.reviewsCount)
+                                  if (Number.isFinite(nextRating) && Number.isFinite(nextCount)) {
+                                    setProduct((prev) => (prev ? { ...prev, rating: nextRating, reviewsCount: nextCount } : prev))
+                                  }
+                                  const listRes = await productsService.listReviews(productId)
+                                  setReviews(Array.isArray(listRes?.data) ? listRes.data : [])
+                                  setReviewMessage('Review submitted')
+                                  setReviewNeedsLogin(false)
+                                } catch (err) {
+                                  const message = err instanceof ApiError ? err.message : err?.message ? String(err.message) : 'Failed to submit review'
+                                  setReviewsError(message)
+                                } finally {
+                                  setReviewBusy(false)
+                                }
+                              }}
+                              className={cn(
+                                'rounded-2xl px-4 py-3 text-sm font-semibold transition',
+                                reviewBusy ? 'cursor-not-allowed bg-zinc-200 text-zinc-500' : 'bg-zinc-900 text-white hover:bg-zinc-950'
+                              )}
+                            >
+                              {reviewBusy ? 'Submitting...' : 'Submit review'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="lg:col-span-7">
+                      {reviewsError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{reviewsError}</div> : null}
+
+                      <div className={cn('space-y-4', reviewsError ? 'mt-4' : '')}>
+                        {reviewsLoading ? (
+                          <div className="text-sm text-zinc-600">Loading reviews...</div>
+                        ) : reviews.length ? (
+                          reviews.map((r) => (
+                            <div key={String(r?.id)} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="truncate text-sm font-semibold text-zinc-900">{r?.name || 'User'}</div>
+                                  {r?.createdAt ? <div className="mt-1 text-xs text-zinc-500">{new Date(r.createdAt).toLocaleDateString()}</div> : null}
+                                </div>
+                                <StarRow value={Number(r?.rating) || 0} />
+                              </div>
+                              {r?.comment ? <div className="mt-2 text-sm leading-6 text-zinc-600">{r.comment}</div> : null}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-zinc-600">No reviews yet.</div>
+                        )}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -528,31 +646,7 @@ export default function Product() {
 
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {related.map((p) => (
-                <Link key={p.id} to={`/products/${p.id}`} className="group block">
-                  <div className="overflow-hidden border border-zinc-200 bg-white transition-colors group-hover:border-zinc-300">
-                    <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
-                      {p.images?.[0] ? (
-                        <img
-                          src={p.images[0]}
-                          alt={p.name}
-                          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="flex justify-between gap-4 p-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-[13px] font-semibold uppercase tracking-wide text-zinc-900 sm:text-sm">{p.name}</div>
-                        <div className="mt-1 text-xs text-zinc-500">{p.category || ' '}</div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span className="inline-flex items-center whitespace-nowrap border border-[#2b2118]/15 bg-[#fbf7f3] px-3 py-1 text-[13px] font-bold text-[#2b2118] sm:text-sm">
-                          {formatInr(p.priceInr)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
           </div>

@@ -26,10 +26,10 @@ function App() {
   const isHome = location.pathname === '/'
 
   return (
-    <div className="min-h-screen bg-[#fbf7f3] text-zinc-900">
+    <div className="flex min-h-screen flex-col bg-[#fbf7f3] text-zinc-900">
       {!isAuth && <Navbar key={location.pathname} isHome={isHome} />}
 
-      <main className={cn(!isAuth ? (isHome ? '' : 'pt-20') : '')}>
+      <main className={cn('flex-1', !isAuth ? (isHome ? '' : 'pt-20') : '')}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />

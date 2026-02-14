@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ApiError, adminAuthService, adminTokenStore, api, API_BASE_URL, categoriesService, resolveAssetUrl, subcategoriesService, withAdminAuth } from '../../services/index.js'
 
@@ -6,6 +6,71 @@ const getErrorMessage = (err) => {
   if (err instanceof ApiError) return err.message
   if (err?.message) return String(err.message)
   return 'Something went wrong'
+}
+
+const RichTextEditor = ({ value, onChange }) => {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const next = String(value || '')
+    if (el.innerHTML !== next) el.innerHTML = next
+  }, [value])
+
+  const apply = (command, arg) => {
+    const el = ref.current
+    if (!el) return
+    el.focus()
+    document.execCommand(command, false, arg)
+    onChange(el.innerHTML)
+  }
+
+  const onLink = () => {
+    const url = window.prompt('Enter link URL')
+    if (!url) return
+    apply('createLink', url)
+  }
+
+  return (
+    <div className="mt-1 overflow-hidden rounded-md border border-stone-300 bg-white">
+      <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-stone-50 px-2 py-2">
+        <button type="button" onClick={() => apply('bold')} className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          B
+        </button>
+        <button type="button" onClick={() => apply('italic')} className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          I
+        </button>
+        <button type="button" onClick={() => apply('underline')} className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          U
+        </button>
+        <div className="h-6 w-px bg-stone-200" />
+        <button type="button" onClick={() => apply('insertUnorderedList')} className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          • List
+        </button>
+        <button type="button" onClick={() => apply('insertOrderedList')} className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          1. List
+        </button>
+        <div className="h-6 w-px bg-stone-200" />
+        <button type="button" onClick={() => apply('formatBlock', 'p')} className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          P
+        </button>
+        <button type="button" onClick={() => apply('formatBlock', 'h2')} className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          H2
+        </button>
+        <button type="button" onClick={onLink} className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          Link
+        </button>
+      </div>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={(e) => onChange(e.currentTarget.innerHTML)}
+        className="min-h-[120px] w-full px-3 py-2 text-sm text-stone-900 outline-none"
+      />
+    </div>
+  )
 }
 
 export default function AdminProductForm() {
@@ -34,6 +99,10 @@ export default function AdminProductForm() {
 
   const [purity, setPurity] = useState('')
   const [weightGrams, setWeightGrams] = useState('')
+
+  const [hasSizes, setHasSizes] = useState(false)
+  const [sizeValue, setSizeValue] = useState('')
+  const [sizes, setSizes] = useState([])
 
   const [sku, setSku] = useState('')
   const [stock, setStock] = useState(0)
@@ -147,6 +216,9 @@ export default function AdminProductForm() {
 
           setPurity(p?.attributes?.purity || '')
           setWeightGrams(p?.attributes?.weightGrams || '')
+
+          setHasSizes(Boolean(p?.hasSizes))
+          setSizes(Array.isArray(p?.sizes) ? p.sizes.map((s) => String(s)).filter(Boolean) : [])
 
           setSku(p?.sku || '')
           setStock(Number(p?.stock || 0))
@@ -317,15 +389,29 @@ export default function AdminProductForm() {
     }
   }
 
+  const addSize = () => {
+    const next = String(sizeValue || '').trim()
+    if (!next) return
+    setSizes((prev) => Array.from(new Set([...prev, next])))
+    setSizeValue('')
+  }
+
+  const removeSize = (value) => {
+    setSizes((prev) => prev.filter((s) => s !== value))
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
     setError('')
 
     try {
+      if (hasSizes && sizes.length === 0) {
+        throw new Error('Please add at least one size or disable sizes.')
+      }
       const payload = {
         name: name.trim(),
-        description: description.trim(),
+        description: description || '',
         categoryId: categoryId || undefined,
         subCategoryId: subCategoryId || undefined,
         isActive: Boolean(isActive),
@@ -333,6 +419,8 @@ export default function AdminProductForm() {
         isBestSeller: Boolean(isBestSeller),
         material: material || undefined,
         materialType: materialType || undefined,
+        hasSizes: Boolean(hasSizes),
+        sizes: hasSizes ? (sizes.length ? sizes : undefined) : undefined,
         sku: sku.trim() || undefined,
         stock: Number(stock || 0),
         makingCost: { amount: Number(makingCostAmount || 0) },
@@ -356,7 +444,7 @@ export default function AdminProductForm() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto py-5">
       <header className="mb-8 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif text-stone-900">{isEdit ? 'Edit Product' : 'Create Product'}</h1>
@@ -388,12 +476,7 @@ export default function AdminProductForm() {
 
           <div className="col-span-2">
             <label className="block text-sm font-medium text-stone-700">Description</label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 block w-full border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
-            />
+            <RichTextEditor value={description} onChange={setDescription} />
           </div>
 
           <div>
@@ -526,6 +609,72 @@ export default function AdminProductForm() {
               onChange={(e) => setWeightGrams(e.target.value)}
               className="mt-1 block w-full border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
             />
+          </div>
+
+          <div className="col-span-2">
+            <label className="flex cursor-pointer items-center gap-3 text-sm text-stone-700">
+              <input
+                type="checkbox"
+                checked={hasSizes}
+                onChange={(e) => {
+                  const next = e.target.checked
+                  setHasSizes(next)
+                  if (!next) {
+                    setSizes([])
+                    setSizeValue('')
+                  }
+                }}
+              />
+              Enable sizes
+            </label>
+
+            {hasSizes ? (
+              <div className="mt-3">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="flex-1 min-w-[220px]">
+                    <label className="block text-sm font-medium text-stone-700">Add size</label>
+                    <input
+                      type="text"
+                      value={sizeValue}
+                      onChange={(e) => setSizeValue(e.target.value)}
+                      placeholder="e.g. 6, 7, 8, M, L"
+                      className="mt-1 block w-full border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          addSize()
+                        }
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addSize}
+                    className="h-10 rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {sizes.length ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {sizes.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => removeSize(s)}
+                        className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+                        title="Remove"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-sm text-stone-500">No sizes added yet.</div>
+                )}
+              </div>
+            ) : null}
           </div>
 
           <div className="col-span-2 grid gap-4 sm:grid-cols-2">

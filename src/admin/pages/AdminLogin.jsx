@@ -80,7 +80,7 @@ export default function AdminLogin() {
           className="rounded-2xl bg-white p-8 text-zinc-900 shadow-sm"
         >
           <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold tracking-wide text-zinc-900">EWITH JEWELLERY</div>
+            <div className="text-sm font-semibold tracking-wide text-zinc-900">OM ABHUSAN JWELLARY</div>
             <div className="rounded-full bg-zinc-100 px-4 py-2 text-xs font-semibold text-zinc-700">Admin Panel</div>
           </div>
 

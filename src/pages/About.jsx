@@ -20,7 +20,7 @@ export default function About() {
 
           <div className="relative mx-auto max-w-screen-2xl px-4 py-24 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
-              <div className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">EWITH</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">OM ABHUSAN</div>
               <h1 className="mt-4 font-serif text-5xl leading-tight sm:text-6xl">About Us</h1>
               <p className="mt-6 text-sm leading-relaxed text-white/80 sm:text-base">
                 Handcrafted jewellery made with patience, precision, and a modern sensibility. We design pieces that feel timeless,
@@ -35,7 +35,7 @@ export default function About() {
             <div className="lg:col-span-5">
               <h2 className="font-serif text-4xl leading-tight text-[#2b2118] sm:text-5xl">Our story</h2>
               <p className="mt-6 text-sm leading-relaxed text-zinc-700 sm:text-base">
-                EWITH started with a simple idea: jewellery should carry meaning. Every piece is designed to complement your everyday
+                Om Abhusan Jwellary started with a simple idea: jewellery should carry meaning. Every piece is designed to complement your everyday
                 style while feeling special enough for your best moments.
               </p>
               <p className="mt-4 text-sm leading-relaxed text-zinc-700 sm:text-base">

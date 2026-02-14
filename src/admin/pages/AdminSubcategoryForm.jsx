@@ -122,7 +122,7 @@ export default function AdminSubcategoryForm() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto py-5">
       <header className="mb-8 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif text-stone-900">{isEdit ? 'Edit Subcategory' : 'Create Subcategory'}</h1>
