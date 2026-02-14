@@ -27,15 +27,17 @@ const formatTodayLabel = () => {
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 }
 
-const buildMonthGrid = (date) => {
-  const first = new Date(date.getFullYear(), date.getMonth(), 1)
-  const startOffset = (first.getDay() + 6) % 7
-  const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-  const cells = []
-  for (let i = 0; i < startOffset; i += 1) cells.push({ key: `e-${i}`, day: null })
-  for (let d = 1; d <= daysInMonth; d += 1) cells.push({ key: `d-${d}`, day: d })
-  while (cells.length % 7 !== 0) cells.push({ key: `t-${cells.length}`, day: null })
-  return { label: first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }), cells }
+const shortId = (id) => (id ? String(id).slice(-8).toUpperCase() : '')
+
+const formatInr = (value) => {
+  const n = Number(value || 0)
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number.isFinite(n) ? n : 0)
+}
+
+const formatDateTime = (value) => {
+  const d = value ? new Date(value) : null
+  if (!d || Number.isNaN(d.getTime())) return '-'
+  return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 export default function AdminHome() {
@@ -107,44 +109,14 @@ export default function AdminHome() {
   const displayName = adminEmail ? adminEmail.split('@')[0] : 'Admin'
   const initials = getInitials(adminEmail)
   const totals = data?.totals || {}
-  const applicantsTotal = Number(totals?.users ?? NaN)
-  const applicants = Number.isFinite(applicantsTotal) ? applicantsTotal : 1240
-  const interviews = Number.isFinite(Number(totals?.orders ?? NaN)) ? Number(totals.orders) : 32
-  const hired = Number.isFinite(Number(totals?.products ?? NaN)) ? Number(totals.products) : 12
-  const openRoles = Number.isFinite(Number(totals?.categories ?? NaN)) ? Number(totals.categories) : 8
+  const usersTotal = Number.isFinite(Number(totals?.users)) ? Number(totals.users) : 0
+  const ordersTotal = Number.isFinite(Number(totals?.orders)) ? Number(totals.orders) : 0
+  const productsTotal = Number.isFinite(Number(totals?.products)) ? Number(totals.products) : 0
+  const categoriesTotal = Number.isFinite(Number(totals?.categories)) ? Number(totals.categories) : 0
 
-  const candidates = Array.isArray(data?.topProducts) && data.topProducts.length
-    ? data.topProducts.slice(0, 5).map((p, idx) => ({
-        id: `${p?._id || idx}`,
-        name: p?.name || `Candidate ${idx + 1}`,
-        role: p?.category || 'Product Designer',
-        date: new Date(Date.now() + idx * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-        stage: ['Screening', 'Interview', 'Offer', 'Hired'][idx % 4],
-        progress: [35, 55, 75, 100][idx % 4]
-      }))
-    : [
-        { id: 'c1', name: 'Darlene Robertson', role: 'Product Designer', date: 'Jan 30', stage: 'Interview', progress: 55 },
-        { id: 'c2', name: 'Albert Flores', role: 'Frontend Developer', date: 'Jan 31', stage: 'Screening', progress: 35 },
-        { id: 'c3', name: 'Jenny Wilson', role: 'UX Researcher', date: 'Feb 1', stage: 'Offer', progress: 75 },
-        { id: 'c4', name: 'Floyd Miles', role: 'Backend Engineer', date: 'Feb 2', stage: 'Interview', progress: 55 },
-        { id: 'c5', name: 'Kristin Watson', role: 'QA Engineer', date: 'Feb 3', stage: 'Hired', progress: 100 }
-      ]
-
-  const newApplicants = [
-    { id: 'a1', name: 'Courtney Henry', role: 'UI Designer', time: '10:15 AM', badge: 'New' },
-    { id: 'a2', name: 'Ralph Edwards', role: 'React Developer', time: '11:20 AM', badge: 'Review' },
-    { id: 'a3', name: 'Savannah Nguyen', role: 'Product Manager', time: '12:40 PM', badge: 'New' },
-    { id: 'a4', name: 'Wade Warren', role: 'Data Analyst', time: '2:05 PM', badge: 'Review' }
-  ]
-
-  const schedule = [
-    { id: 's1', title: 'Interview: Product Designer', time: '09:30 - 10:00', meta: 'Zoom' },
-    { id: 's2', title: 'Screening Call: Frontend Dev', time: '11:00 - 11:30', meta: 'Google Meet' },
-    { id: 's3', title: 'Hiring Sync', time: '02:00 - 02:30', meta: 'Room 3A' }
-  ]
-
-  const month = buildMonthGrid(new Date())
-  const today = new Date().getDate()
+  const topProducts = Array.isArray(data?.topProducts) ? data.topProducts : []
+  const recentOrders = Array.isArray(data?.recentOrders) ? data.recentOrders : []
+  const lowStock = Array.isArray(data?.lowStock) ? data.lowStock : []
 
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
@@ -210,24 +182,29 @@ export default function AdminHome() {
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{analyticsError}</div>
         ) : null}
 
-        <div className="mt-6 flex min-w-0 flex-col gap-5 lg:flex-row">
+        <div className="mt-6 flex min-w-0 flex-col gap-5 xl:flex-row">
           <div className="grid min-w-0 flex-1 gap-5 overflow-x-hidden">
             <div className="relative isolate min-w-0 overflow-hidden rounded-3xl bg-gradient-to-br from-[#2b2118] via-[#3a2a1f] to-[#6b4b3a] px-6 py-6 text-white sm:px-7">
               <div className="relative z-10 max-w-[420px]">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-white/80">Welcome back</div>
-                <div className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Manage your recruitment in one place</div>
+              <div className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Manage your store in one place</div>
                 <div className="mt-2 text-sm font-semibold text-white/80">
-                  {loadingAnalytics ? 'Loading insights…' : 'Track applicants, interviews, and hiring progress.'}
+                {loadingAnalytics ? 'Loading insights…' : 'Track orders, customers, products, and inventory health.'}
                 </div>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <button type="button" className="h-11 rounded-full bg-white px-5 text-sm font-extrabold text-[#2b2118] hover:bg-white/90">
-                    View applicants
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/orders')}
+                  className="h-11 rounded-full bg-white px-5 text-sm font-extrabold text-[#2b2118] hover:bg-white/90"
+                >
+                  View orders
                   </button>
                   <button
                     type="button"
-                    className="h-11 rounded-full border border-white/35 bg-white/10 px-5 text-sm font-extrabold text-white hover:bg-white/15"
+                  onClick={() => navigate('/admin/products')}
+                  className="h-11 rounded-full border border-white/35 bg-white/10 px-5 text-sm font-extrabold text-white hover:bg-white/15"
                   >
-                    Create new role
+                  View products
                   </button>
                 </div>
               </div>
@@ -248,17 +225,14 @@ export default function AdminHome() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {[
-                { label: 'Applicants', value: loadingAnalytics ? '...' : String(applicants), tone: 'bg-white border-zinc-200' },
-                { label: 'Interviews', value: loadingAnalytics ? '...' : String(interviews), tone: 'bg-white border-zinc-200' },
-                { label: 'Hired', value: loadingAnalytics ? '...' : String(hired), tone: 'bg-white border-zinc-200' },
-                { label: 'Open Roles', value: loadingAnalytics ? '...' : String(openRoles), tone: 'bg-white border-zinc-200' }
+                { label: 'Users', value: loadingAnalytics ? '...' : String(usersTotal), tone: 'bg-white border-zinc-200' },
+                { label: 'Orders', value: loadingAnalytics ? '...' : String(ordersTotal), tone: 'bg-white border-zinc-200' },
+                { label: 'Products', value: loadingAnalytics ? '...' : String(productsTotal), tone: 'bg-white border-zinc-200' },
+                { label: 'Categories', value: loadingAnalytics ? '...' : String(categoriesTotal), tone: 'bg-white border-zinc-200' }
               ].map((card) => (
                 <div key={card.label} className={cn('rounded-3xl border p-5', card.tone)}>
                   <div className="text-xs font-semibold text-slate-500">{card.label}</div>
                   <div className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{card.value}</div>
-                  <div className="mt-3 h-1.5 w-full rounded-full bg-[#fbf7f3]">
-                    <div className="h-1.5 rounded-full bg-[#2b2118]" style={{ width: `${Math.max(18, (Number(card.value) % 100) || 65)}%` }} />
-                  </div>
                 </div>
               ))}
             </div>
@@ -266,57 +240,36 @@ export default function AdminHome() {
             <div className="rounded-3xl border border-zinc-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div className="text-sm font-extrabold text-slate-900">Recruitment Progress</div>
-                  <div className="mt-1 text-xs font-semibold text-slate-500">Recent candidates</div>
+                  <div className="text-sm font-extrabold text-slate-900">Top Products</div>
+                  <div className="mt-1 text-xs font-semibold text-slate-500">By quantity sold</div>
                 </div>
-                <button type="button" className="h-9 rounded-full bg-[#fbf7f3] px-4 text-xs font-extrabold text-[#2b2118] hover:bg-[#f3ece6]">
-                  View all
-                </button>
               </div>
 
               <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-100">
                 <div className="overflow-x-auto">
                   <div className="min-w-[760px]">
-                    <div className="grid grid-cols-[1.2fr_1fr_0.8fr_1fr] gap-3 bg-[#fbf7f3] px-4 py-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                      <div>Name</div>
-                      <div>Role</div>
-                      <div>Date</div>
-                      <div>Status</div>
+                    <div className="grid grid-cols-[1.4fr_0.6fr_0.8fr] gap-3 bg-[#fbf7f3] px-4 py-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                      <div>Product</div>
+                      <div>Qty</div>
+                      <div>Revenue</div>
                     </div>
                     <div className="divide-y divide-zinc-100">
-                      {candidates.map((c) => (
-                        <div key={c.id} className="grid grid-cols-[1.2fr_1fr_0.8fr_1fr] items-center gap-3 px-4 py-3">
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-extrabold text-slate-900">{c.name}</div>
-                            <div className="truncate text-xs font-semibold text-slate-500">#{String(c.id).slice(0, 6)}</div>
-                          </div>
-                          <div className="min-w-0 truncate text-sm font-semibold text-slate-700">{c.role}</div>
-                          <div className="text-sm font-semibold text-slate-700">{c.date}</div>
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={cn(
-                                'inline-flex h-7 items-center rounded-full px-3 text-[11px] font-extrabold',
-                                c.stage === 'Hired'
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : c.stage === 'Offer'
-                                    ? 'bg-amber-50 text-amber-700'
-                                    : 'bg-[#fbf7f3] text-[#2b2118]'
-                              )}
-                            >
-                              {c.stage}
-                            </span>
-                            <div className="hidden flex-1 sm:block">
-                              <div className="h-2 w-full rounded-full bg-[#fbf7f3]">
-                                <div
-                                  className="h-2 rounded-full bg-[#2b2118]"
-                                  style={{ width: `${Math.max(8, Math.min(100, Number(c.progress) || 0))}%` }}
-                                />
-                              </div>
+                      {loadingAnalytics ? (
+                        <div className="px-4 py-4 text-sm font-semibold text-slate-500">Loading...</div>
+                      ) : topProducts.length === 0 ? (
+                        <div className="px-4 py-4 text-sm font-semibold text-slate-500">No sales data yet.</div>
+                      ) : (
+                        topProducts.slice(0, 8).map((p, idx) => (
+                          <div key={String(p?._id || idx)} className="grid grid-cols-[1.4fr_0.6fr_0.8fr] items-center gap-3 px-4 py-3">
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-extrabold text-slate-900">{p?.name || '-'}</div>
+                              <div className="truncate text-xs font-semibold text-slate-500">#{String(p?._id || '').slice(-6)}</div>
                             </div>
-                            <div className="hidden w-10 text-right text-xs font-extrabold text-slate-500 sm:block">{c.progress}%</div>
+                            <div className="text-sm font-semibold text-slate-700">{Number(p?.qty || 0)}</div>
+                            <div className="text-sm font-semibold text-slate-700">{formatInr(p?.revenue || 0)}</div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -324,96 +277,82 @@ export default function AdminHome() {
             </div>
           </div>
 
-          <div className="grid min-w-0 w-full shrink-0 gap-5 lg:w-[420px]">
+          <div className="grid min-w-0 w-full shrink-0 gap-5 xl:w-[420px]">
             <div className="rounded-3xl border border-zinc-200 bg-white p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-sm font-extrabold text-slate-900">Schedule</div>
-                  <div className="mt-1 text-xs font-semibold text-slate-500">Today</div>
+                  <div className="text-sm font-extrabold text-slate-900">Recent Orders</div>
+                  <div className="mt-1 text-xs font-semibold text-slate-500">Latest activity</div>
                 </div>
-                <button type="button" className="h-9 rounded-full bg-[#2b2118] px-4 text-xs font-extrabold text-white hover:bg-[#1f1711]">
-                  Add
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/orders')}
+                  className="h-9 rounded-full bg-[#2b2118] px-4 text-xs font-extrabold text-white hover:bg-[#1f1711]"
+                >
+                  View
                 </button>
               </div>
 
               <div className="mt-4 space-y-3">
-                {schedule.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-zinc-100 bg-white px-4 py-3">
-                    <div className="text-sm font-extrabold text-slate-900">{item.title}</div>
-                    <div className="mt-1 flex items-center justify-between gap-3 text-xs font-semibold text-slate-500">
-                      <span>{item.time}</span>
-                      <span>{item.meta}</span>
+                {loadingAnalytics ? (
+                  <div className="rounded-2xl border border-zinc-100 bg-white px-4 py-3 text-sm font-semibold text-slate-500">Loading...</div>
+                ) : recentOrders.length === 0 ? (
+                  <div className="rounded-2xl border border-zinc-100 bg-white px-4 py-3 text-sm font-semibold text-slate-500">No orders yet.</div>
+                ) : (
+                  recentOrders.slice(0, 6).map((o) => (
+                    <div key={String(o?._id)} className="rounded-2xl border border-zinc-100 bg-white px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-extrabold text-slate-900">#{shortId(o?._id)}</div>
+                          <div className="truncate text-xs font-semibold text-slate-500">
+                            {o?.customerName || o?.customerEmail || '-'} • {formatDateTime(o?.createdAt)}
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="text-sm font-extrabold text-slate-900">{formatInr(o?.total || 0)}</div>
+                          <div className="text-[11px] font-semibold text-slate-500">{String(o?.status || 'pending')}</div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-zinc-100 bg-[#fbf7f3] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-extrabold text-slate-900">{month.label}</div>
-                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Mon–Sun</div>
-                </div>
-                <div className="mt-3 grid grid-cols-7 gap-2 text-center text-[11px] font-extrabold text-slate-500">
-                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) => (
-                    <div key={d}>{d}</div>
-                  ))}
-                </div>
-                <div className="mt-2 grid grid-cols-7 gap-2 text-center">
-                  {month.cells.map((cell) => (
-                    <div
-                      key={cell.key}
-                      className={cn(
-                        'grid h-9 place-items-center rounded-xl text-xs font-extrabold',
-                        cell.day ? 'text-slate-700 hover:bg-white' : 'text-slate-300',
-                        cell.day === today ? 'bg-[#2b2118] text-white hover:bg-[#2b2118]' : ''
-                      )}
-                    >
-                      {cell.day || ''}
-                    </div>
-                  ))}
-                </div>
+                  ))
+                )}
               </div>
             </div>
 
             <div className="rounded-3xl border border-zinc-200 bg-white p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-sm font-extrabold text-slate-900">New Applicants</div>
-                  <div className="mt-1 text-xs font-semibold text-slate-500">Today</div>
+                  <div className="text-sm font-extrabold text-slate-900">Low Stock</div>
+                  <div className="mt-1 text-xs font-semibold text-slate-500">Products with stock ≤ 3</div>
                 </div>
-                <button type="button" className="h-9 rounded-full bg-[#fbf7f3] px-4 text-xs font-extrabold text-[#2b2118] hover:bg-[#f3ece6]">
-                  Filter
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/products')}
+                  className="h-9 rounded-full bg-[#fbf7f3] px-4 text-xs font-extrabold text-[#2b2118] hover:bg-[#f3ece6]"
+                >
+                  Inventory
                 </button>
               </div>
 
               <div className="mt-4 space-y-3">
-                {newApplicants.map((a) => (
-                  <div key={a.id} className="flex items-center gap-3 rounded-2xl border border-zinc-100 bg-white px-4 py-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#fbf7f3] text-xs font-extrabold text-[#2b2118]">
-                      {a.name
-                        .split(' ')
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .map((p) => p[0]?.toUpperCase())
-                        .join('')}
+                {loadingAnalytics ? (
+                  <div className="rounded-2xl border border-zinc-100 bg-white px-4 py-3 text-sm font-semibold text-slate-500">Loading...</div>
+                ) : lowStock.length === 0 ? (
+                  <div className="rounded-2xl border border-zinc-100 bg-white px-4 py-3 text-sm font-semibold text-slate-500">No low-stock products.</div>
+                ) : (
+                  lowStock.slice(0, 8).map((p, idx) => (
+                    <div key={String(p?._id || idx)} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-100 bg-white px-4 py-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-extrabold text-slate-900">{p?.name || '-'}</div>
+                        <div className="truncate text-xs font-semibold text-slate-500">#{String(p?._id || '').slice(-6)}</div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="text-sm font-extrabold text-slate-900">{Number(p?.minStock || 0)}</div>
+                        <div className="text-[11px] font-semibold text-slate-500">in stock</div>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-extrabold text-slate-900">{a.name}</div>
-                      <div className="truncate text-xs font-semibold text-slate-500">{a.role}</div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span
-                        className={cn(
-                          'inline-flex h-7 items-center rounded-full px-3 text-[11px] font-extrabold',
-                          a.badge === 'New' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                        )}
-                      >
-                        {a.badge}
-                      </span>
-                      <span className="text-[11px] font-semibold text-slate-500">{a.time}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>

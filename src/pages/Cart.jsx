@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { ApiError, cartService, wishlistStore } from '../services/index.js'
 import { formatInr, formatPercentOff } from './products.data.js'
+import PageLoader from '../components/PageLoader.jsx'
 
 const MotionDiv = motion.div
 
@@ -184,8 +185,8 @@ export default function Cart() {
           {error ? <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 
           {loading ? (
-            <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-8">
-              <div className="text-sm text-zinc-700">Loading...</div>
+            <div className="mt-6">
+              <PageLoader />
             </div>
           ) : lines.length === 0 ? (
             <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-8">

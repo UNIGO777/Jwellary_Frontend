@@ -10,6 +10,7 @@ import AdminSubcategoryForm from './pages/AdminSubcategoryForm.jsx'
 import AdminPromocodes from './pages/AdminPromocodes.jsx'
 import AdminPromocodeForm from './pages/AdminPromocodeForm.jsx'
 import AdminOrders from './pages/AdminOrders.jsx'
+import AdminUsers from './pages/AdminUsers.jsx'
 import AdminGoldRates from './pages/AdminGoldRates.jsx'
 import AdminSilverRates from './pages/AdminSilverRates.jsx'
 import AdminDiamondTypes from './pages/AdminDiamondTypes.jsx'
@@ -36,6 +37,7 @@ export default function AdminRoutes() {
         }
       >
         <Route index element={<AdminHome />} />
+        <Route path="users" element={<AdminUsers />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="products" element={<AdminProducts />} />
         <Route path="products/new" element={<AdminProductForm />} />

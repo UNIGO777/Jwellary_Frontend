@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, ordersService, paymentsService } from '../services/index.js'
+import { ApiError, ordersService } from '../services/index.js'
 import { formatInr } from './products.data.js'
+import PageLoader from '../components/PageLoader.jsx'
 
 const MotionDiv = motion.div
 
@@ -30,13 +31,8 @@ export default function OrderDetails() {
   const [error, setError] = useState('')
   const [order, setOrder] = useState(null)
 
-  const [paymentStatus, setPaymentStatus] = useState('succeeded')
-  const [transactionId, setTransactionId] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
-
   const payment = order?.payment && typeof order.payment === 'object' ? order.payment : null
-  const paymentId = payment?._id || payment?.id || ''
+  const delivery = order?.delivery && typeof order.delivery === 'object' ? order.delivery : null
 
   useEffect(() => {
     let alive = true
@@ -44,18 +40,12 @@ export default function OrderDetails() {
       if (!alive) return
       setLoading(true)
       setError('')
-      setMessage('')
     })
     ordersService
       .getById(orderId)
       .then((res) => {
         if (!alive) return
         setOrder(res?.data || null)
-        const p = res?.data?.payment
-        if (p && typeof p === 'object') {
-          if (p.status) setPaymentStatus(String(p.status))
-          if (p.transactionId) setTransactionId(String(p.transactionId))
-        }
       })
       .catch((err) => {
         if (!alive) return
@@ -78,27 +68,6 @@ export default function OrderDetails() {
   const status = order?.status ? String(order.status) : 'pending'
   const createdAt = order?.createdAt ? formatDate(order.createdAt) : ''
 
-  const updatePayment = async () => {
-    if (!paymentId) return
-    setBusy(true)
-    setError('')
-    setMessage('')
-    try {
-      await paymentsService.setStatus(paymentId, { status: paymentStatus, transactionId: transactionId.trim(), meta: {} })
-      setMessage('Payment updated')
-      const refreshed = await ordersService.getById(orderId)
-      setOrder(refreshed?.data || null)
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        navigate('/auth')
-        return
-      }
-      setError(getErrorMessage(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
@@ -119,11 +88,10 @@ export default function OrderDetails() {
           </div>
 
           {error ? <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
-          {message ? <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{message}</div> : null}
 
           {loading ? (
-            <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-8">
-              <div className="text-sm text-zinc-700">Loading...</div>
+            <div className="mt-6">
+              <PageLoader />
             </div>
           ) : !order ? (
             <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-8">
@@ -173,6 +141,25 @@ export default function OrderDetails() {
                       {order?.shippingAddress?.state ? `, ${order.shippingAddress.state}` : ''}
                       {order?.shippingAddress?.postalCode ? ` - ${order.shippingAddress.postalCode}` : ''}
                     </div>
+                    <div className="mt-4 h-px bg-zinc-200" />
+                    <div className="mt-4 text-xs font-semibold text-zinc-600">Parcel delivery</div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                      <span className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-700">
+                        {delivery?.status ? String(delivery.status) : 'pending'}
+                      </span>
+                      {delivery?.provider ? <span className="text-sm font-semibold text-zinc-900">{String(delivery.provider)}</span> : null}
+                      {delivery?.trackingId ? <span className="text-sm text-zinc-700">Tracking: {String(delivery.trackingId)}</span> : null}
+                      {delivery?.trackingUrl ? (
+                        <a
+                          href={String(delivery.trackingUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-semibold text-[#2b2118] hover:underline"
+                        >
+                          Track parcel
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </section>
@@ -204,66 +191,19 @@ export default function OrderDetails() {
                   {!payment ? (
                     <div className="mt-2 text-sm text-zinc-600">No payment linked yet.</div>
                   ) : (
-                    <>
-                      <div className="mt-4 space-y-3 text-sm">
-                        <div className="flex items-center justify-between text-zinc-700">
-                          <span>Provider</span>
-                          <span className="font-semibold text-zinc-900">{payment.provider}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-zinc-700">
-                          <span>Method</span>
-                          <span className="font-semibold text-zinc-900">{payment.method}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-zinc-700">
-                          <span>Status</span>
-                          <span className="font-semibold text-zinc-900">{payment.status}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-zinc-700">
-                          <span>Amount</span>
-                          <span className="font-semibold text-zinc-900">{formatInr(payment.amount)}</span>
-                        </div>
+                    <div className="mt-4 rounded-2xl border border-zinc-200 bg-[#fbf7f3] p-4 text-sm text-zinc-700">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-zinc-600">Method</span>
+                        <span className="font-semibold text-zinc-900">{String(payment.method || '').toLowerCase() === 'cod' ? 'Cash on delivery' : payment.method}</span>
                       </div>
-
-                      <div className="mt-5 rounded-2xl border border-zinc-200 bg-[#fbf7f3] p-4">
-                        <div className="text-xs font-semibold text-zinc-900">Update payment status</div>
-                        <div className="mt-3 space-y-3">
-                          <div>
-                            <div className="text-xs font-semibold text-zinc-600">Status</div>
-                            <select
-                              value={paymentStatus}
-                              onChange={(e) => setPaymentStatus(e.target.value)}
-                              className="mt-2 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none hover:bg-white"
-                            >
-                              {['created', 'authorized', 'captured', 'failed', 'refunded', 'succeeded'].map((s) => (
-                                <option key={s} value={s}>
-                                  {s}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <div className="text-xs font-semibold text-zinc-600">Transaction id (optional)</div>
-                            <input
-                              value={transactionId}
-                              onChange={(e) => setTransactionId(e.target.value)}
-                              className="mt-2 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-zinc-300"
-                              placeholder="TXN123"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => void updatePayment()}
-                            disabled={busy}
-                            className={cn(
-                              'w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition',
-                              busy ? 'cursor-not-allowed bg-zinc-200 text-zinc-500' : 'bg-[#2b2118] text-white hover:bg-[#1f1711]'
-                            )}
-                          >
-                            {busy ? 'Updating...' : 'Update payment'}
-                          </button>
-                        </div>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-zinc-600">Amount</span>
+                        <span className="font-semibold text-zinc-900">{formatInr(payment.amount)}</span>
                       </div>
-                    </>
+                      {String(payment.method || '').toLowerCase() === 'cod' ? (
+                        <div className="mt-3 text-xs text-zinc-600">Pay when your order arrives.</div>
+                      ) : null}
+                    </div>
                   )}
                 </div>
               </aside>

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { ApiError, ordersService } from '../services/index.js'
 import { formatInr } from './products.data.js'
+import PageLoader from '../components/PageLoader.jsx'
 
 const MotionDiv = motion.div
 
@@ -93,8 +94,8 @@ export default function Orders() {
           ) : null}
 
           {loading ? (
-            <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-8">
-              <div className="text-sm text-zinc-700">Loading...</div>
+            <div className="mt-6">
+              <PageLoader />
             </div>
           ) : empty ? (
             <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-8">

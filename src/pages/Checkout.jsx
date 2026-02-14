@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { ApiError, cartService, ordersService, paymentsService, productsService, promocodesService } from '../services/index.js'
 import { formatInr, formatPercentOff } from './products.data.js'
+import PageLoader from '../components/PageLoader.jsx'
 
 const MotionDiv = motion.div
 
@@ -155,7 +156,6 @@ export default function Checkout() {
   const [city, setCity] = useState('')
   const [stateName, setStateName] = useState('')
   const [address, setAddress] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('COD')
   const [submitted, setSubmitted] = useState(false)
 
   const phoneDigits = useMemo(() => String(phone || '').replace(/\D/g, ''), [phone])
@@ -179,7 +179,6 @@ export default function Checkout() {
     isValidCity &&
     isValidState &&
     isValidEmail &&
-    Boolean(paymentMethod) &&
     !loading
 
   const [placingOrder, setPlacingOrder] = useState(false)
@@ -241,25 +240,24 @@ export default function Checkout() {
       })
 
       const orderId = orderRes?.data?._id || orderRes?.data?.id
-      if (orderId) {
-        const method = paymentMethod === 'COD' ? 'cod' : paymentMethod === 'UPI' ? 'upi' : 'card'
-        await paymentsService.create({
-          orderId,
-          provider: 'manual',
-          method,
-          amount: total,
-          currency: 'INR',
-          transactionId: '',
-          meta: {}
-        })
-      }
+      if (!orderId) throw new Error('Failed to create order')
+
+      await paymentsService.create({
+        orderId,
+        provider: 'manual',
+        method: 'cod',
+        amount: total,
+        currency: 'INR',
+        transactionId: '',
+        meta: {}
+      })
 
       if (!buyNow?.productId) {
         await Promise.all(lines.map((l) => cartService.remove(l.product.id)))
         setVersion((v) => v + 1)
       }
 
-      navigate('/orders', { state: { justPlaced: orderId || '' } })
+      navigate('/orders', { state: { justPlaced: orderId } })
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         navigate('/auth')
@@ -326,8 +324,8 @@ export default function Checkout() {
           {error ? <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 
           {loading ? (
-            <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-8">
-              <div className="text-sm text-zinc-700">Loading...</div>
+            <div className="mt-6">
+              <PageLoader />
             </div>
           ) : lines.length === 0 ? (
             <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-8">
@@ -525,46 +523,9 @@ export default function Checkout() {
 
                 <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-5 sm:p-6">
                   <div className="text-sm font-semibold text-zinc-900">Payment</div>
-                  <div className="mt-4 space-y-3 text-sm">
-                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value="COD"
-                        checked={paymentMethod === 'COD'}
-                        onChange={() => setPaymentMethod('COD')}
-                      />
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-zinc-900">Cash on delivery</div>
-                        <div className="mt-1 text-xs text-zinc-500">Pay when your order arrives.</div>
-                      </div>
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value="UPI"
-                        checked={paymentMethod === 'UPI'}
-                        onChange={() => setPaymentMethod('UPI')}
-                      />
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-zinc-900">UPI</div>
-                        <div className="mt-1 text-xs text-zinc-500">Pay securely using your UPI app.</div>
-                      </div>
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value="CARD"
-                        checked={paymentMethod === 'CARD'}
-                        onChange={() => setPaymentMethod('CARD')}
-                      />
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-zinc-900">Card</div>
-                        <div className="mt-1 text-xs text-zinc-500">Pay using debit/credit card.</div>
-                      </div>
-                    </label>
+                  <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 text-sm">
+                    <div className="text-sm font-semibold text-zinc-900">Cash on delivery</div>
+                    <div className="mt-1 text-xs text-zinc-500">Pay when your order arrives.</div>
                   </div>
                 </div>
               </section>
@@ -650,7 +611,7 @@ export default function Checkout() {
                     )}
                     disabled={!canPlaceOrder || placingOrder}
                   >
-                    {placingOrder ? 'Placing...' : 'Place order'}
+                    {placingOrder ? 'Processing...' : 'Place order'}
                   </button>
 
                   <div className="mt-4 text-xs text-zinc-500">

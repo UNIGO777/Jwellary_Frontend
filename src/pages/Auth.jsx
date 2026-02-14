@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError, authService } from '../services/index.js'
 
 const MotionDiv = motion.div
@@ -28,6 +28,7 @@ const TabButton = ({ active, children, onClick }) => (
 
 export default function Auth() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [mode, setMode] = useState('signup')
   const [step, setStep] = useState('init')
   const [busy, setBusy] = useState(false)
@@ -88,7 +89,8 @@ export default function Auth() {
       setMessage('Logged in successfully')
       setStep('init')
       setOtp('')
-      navigate('/', { replace: true })
+      const returnTo = location.state?.returnTo ? String(location.state.returnTo) : '/'
+      navigate(returnTo, { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
