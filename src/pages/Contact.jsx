@@ -16,6 +16,9 @@ const getErrorMessage = (err) => {
 export default function Contact() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [isOrderQuery, setIsOrderQuery] = useState(false)
+  const [orderId, setOrderId] = useState('')
   const [message, setMessage] = useState('')
 
   const [busy, setBusy] = useState(false)
@@ -27,10 +30,20 @@ export default function Contact() {
     setError('')
     setSuccess('')
     try {
-      const res = await mailService.contact({ name, email, message })
+      const res = await mailService.contact({
+        name,
+        email,
+        phone,
+        message,
+        orderId: isOrderQuery ? orderId : '',
+        type: isOrderQuery ? 'order' : 'contact'
+      })
       setSuccess(res?.id ? `Message sent (id: ${res.id})` : 'Message sent')
       setName('')
       setEmail('')
+      setPhone('')
+      setIsOrderQuery(false)
+      setOrderId('')
       setMessage('')
     } catch (err) {
       setError(getErrorMessage(err))
@@ -39,12 +52,15 @@ export default function Contact() {
     }
   }
 
-  const canSubmit = name.trim().length >= 2 && email.trim().includes('@') && message.trim().length >= 5 && !busy
+  const phoneDigits = String(phone || '').replace(/\D/g, '')
+  const isValidPhone = phoneDigits.length >= 10
+  const isValidOrderId = !isOrderQuery || orderId.trim().length >= 3
+  const canSubmit = name.trim().length >= 2 && email.trim().includes('@') && isValidPhone && isValidOrderId && message.trim().length >= 5 && !busy
 
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
-        <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto   px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-zinc-900">Contact</div>
@@ -87,6 +103,49 @@ export default function Contact() {
                       inputMode="email"
                     />
                   </div>
+                  <div>
+                    <div className="text-xs font-semibold text-zinc-600">Phone</div>
+                    <input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="mt-2 h-11 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 outline-none focus:border-zinc-300"
+                      placeholder="Your phone number"
+                      inputMode="tel"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                    <div>
+                      <div className="text-sm font-semibold text-zinc-900">Query on order</div>
+                      <div className="mt-0.5 text-xs text-zinc-500">Enable if you want help with an existing order.</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsOrderQuery((v) => !v)}
+                      className={cn(
+                        'relative inline-flex h-7 w-12 items-center rounded-full border transition',
+                        isOrderQuery ? 'border-[#2b2118] bg-[#2b2118]' : 'border-zinc-300 bg-zinc-200'
+                      )}
+                      aria-pressed={isOrderQuery}
+                    >
+                      <span
+                        className={cn(
+                          'inline-block h-6 w-6 transform rounded-full bg-white shadow transition',
+                          isOrderQuery ? 'translate-x-5' : 'translate-x-0.5'
+                        )}
+                      />
+                    </button>
+                  </div>
+                  {isOrderQuery ? (
+                    <div>
+                      <div className="text-xs font-semibold text-zinc-600">Order id</div>
+                      <input
+                        value={orderId}
+                        onChange={(e) => setOrderId(e.target.value)}
+                        className="mt-2 h-11 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 outline-none focus:border-zinc-300"
+                        placeholder="Enter your order id"
+                      />
+                    </div>
+                  ) : null}
                   <div>
                     <div className="text-xs font-semibold text-zinc-600">Message</div>
                     <textarea
@@ -134,4 +193,3 @@ export default function Contact() {
     </MotionDiv>
   )
 }
-

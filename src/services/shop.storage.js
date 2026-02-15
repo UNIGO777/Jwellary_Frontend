@@ -47,16 +47,19 @@ export const wishlistStore = {
     const ids = this.getIds()
     const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]
     writeArray(WISHLIST_KEY, next)
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('shop:wishlist:changed'))
     return next
   },
   remove(id) {
     if (!id) return this.getIds()
     const next = this.getIds().filter((x) => x !== id)
     writeArray(WISHLIST_KEY, next)
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('shop:wishlist:changed'))
     return next
   },
   clear() {
     writeArray(WISHLIST_KEY, [])
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('shop:wishlist:changed'))
     return []
   }
 }
@@ -82,6 +85,7 @@ export const cartStore = {
     if (safeQty <= 0) delete next[productId]
     else next[productId] = safeQty
     writeObject(CART_KEY, next)
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('shop:cart:changed'))
     return next
   },
   add(productId, qty = 1) {
@@ -94,7 +98,7 @@ export const cartStore = {
   },
   clear() {
     writeObject(CART_KEY, {})
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('shop:cart:changed'))
     return {}
   }
 }
-

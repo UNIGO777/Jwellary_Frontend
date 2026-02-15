@@ -36,7 +36,7 @@ export default function BestSellers() {
   }, [])
 
   return (
-    <div className="mx-auto max-w-screen-2xl px-4 pb-24 pt-10 sm:px-6 lg:px-8">
+    <div className="mx-auto   px-4 pb-24 pt-10 sm:px-6 lg:px-8">
       <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Most loved</div>

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { formatInr, formatPercentOff } from './products.data.js'
 import { ApiError, cartService, productsService, tokenStore, wishlistStore } from '../services/index.js'
@@ -9,6 +9,30 @@ import ProductCard from '../components/ProductCard.jsx'
 const MotionDiv = motion.div
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
+
+const isMongoId = (value) => /^[a-f\d]{24}$/i.test(String(value || ''))
+
+const extractMongoId = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  if (isMongoId(raw)) return raw
+  const m = raw.match(/([a-f\d]{24})$/i)
+  return m ? m[1] : ''
+}
+
+const slugify = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+const buildProductUrl = (product) => {
+  const id = String(product?.id || product?._id || '')
+  const name = slugify(product?.name || '') || 'product'
+  if (!id) return '/products'
+  return `/products/${name}_id?id=${encodeURIComponent(id)}`
+}
 
 const StarRow = ({ value = 0 }) => {
   const rounded = Math.round(Number(value || 0) * 10) / 10
@@ -43,8 +67,17 @@ const QtyButton = ({ children, onClick, disabled }) => (
 )
 
 export default function Product() {
-  const { productId } = useParams()
+  const { productId: productIdParam, productName: productNameParam, productSlug } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
+  const searchId = useMemo(() => {
+    const sp = new URLSearchParams(location.search)
+    const raw = (sp.get('id') || sp.get('productId') || '').trim()
+    return extractMongoId(raw)
+  }, [location.search])
+
+  const key = productSlug || productIdParam
+  const productId = extractMongoId(key) || searchId
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
   const [loading, setLoading] = useState(true)
@@ -86,7 +119,8 @@ export default function Product() {
     Promise.all([productsService.getById(productId), productsService.list({ page: 1, limit: 8 })])
       .then(([pRes, listRes]) => {
         if (!alive) return
-        setProduct(pRes?.data || null)
+        const p = pRes?.data || null
+        setProduct(p)
         const list = Array.isArray(listRes?.data) ? listRes.data : []
         const nextRelated = list.filter((p) => p?.id && p.id !== productId).slice(0, 3)
         setRelated(nextRelated)
@@ -106,6 +140,19 @@ export default function Product() {
       alive = false
     }
   }, [productId])
+
+  useEffect(() => {
+    if (!product) return
+    if (!productId) return
+    const next = buildProductUrl(product)
+    const desiredName = slugify(product?.name || '') || 'product'
+    const hasBadId = !searchId || searchId !== productId
+    const hasBadName = key && String(key || '') !== `${desiredName}_id`
+    const hasExtraSegment = productNameParam !== undefined
+    if (hasBadId || hasBadName || hasExtraSegment) {
+      navigate(next, { replace: true })
+    }
+  }, [navigate, product, productId, key, productNameParam, searchId])
 
   useEffect(() => {
     const list = product?.hasSizes && Array.isArray(product?.sizes) ? product.sizes : []
@@ -150,7 +197,7 @@ export default function Product() {
     return (
       <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <div className="bg-transparent">
-          <div className="mx-auto max-w-screen-2xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto   px-4 py-10 sm:px-6 lg:px-8">
             <PageLoader />
           </div>
         </div>
@@ -162,7 +209,7 @@ export default function Product() {
     return (
       <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <div className="bg-transparent">
-          <div className="mx-auto max-w-screen-2xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto   px-4 py-10 sm:px-6 lg:px-8">
             <div className="rounded-2xl border border-zinc-200 bg-white p-8">
               {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
               <div className="text-sm text-zinc-700">Product not found</div>

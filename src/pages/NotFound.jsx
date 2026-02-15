@@ -7,7 +7,7 @@ export default function NotFound() {
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-zinc-50">
-        <div className="mx-auto max-w-screen-2xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto   px-4 py-10 sm:px-6 lg:px-8">
           <div className="rounded-2xl border border-zinc-200 bg-white p-8">
             <div className="text-sm text-zinc-700">Page not found</div>
             <div className="mt-4">

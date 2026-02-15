@@ -1,13 +1,26 @@
 import { motion } from 'framer-motion'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, cartService, ordersService, paymentsService, productsService, promocodesService } from '../services/index.js'
+import { ApiError, authService, cartService, ordersService, paymentsService, productsService, promocodesService, tokenStore } from '../services/index.js'
 import { formatInr, formatPercentOff } from './products.data.js'
 import PageLoader from '../components/PageLoader.jsx'
 
 const MotionDiv = motion.div
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
+
+const slugify = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+const productUrl = (product) => {
+  const id = String(product?.id || '')
+  const name = slugify(product?.name || '') || 'product'
+  return id ? `/products/${name}_id?id=${encodeURIComponent(id)}` : '/products'
+}
 
 const StarRow = ({ value = 0 }) => {
   const rounded = Math.round(Number(value || 0) * 10) / 10
@@ -152,11 +165,34 @@ export default function Checkout() {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [fullNameTouched, setFullNameTouched] = useState(false)
+  const [emailTouched, setEmailTouched] = useState(false)
+  const [didPrefillProfile, setDidPrefillProfile] = useState(false)
   const [pincode, setPincode] = useState('')
   const [city, setCity] = useState('')
   const [stateName, setStateName] = useState('')
   const [address, setAddress] = useState('')
   const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    if (didPrefillProfile) return
+    if (!tokenStore.get()) return
+    let alive = true
+    setDidPrefillProfile(true)
+    authService
+      .me()
+      .then((res) => {
+        if (!alive) return
+        const profile = res?.data || null
+        if (!profile) return
+        if (!fullNameTouched && !fullName.trim() && profile.fullName) setFullName(String(profile.fullName))
+        if (!emailTouched && !email.trim() && profile.email) setEmail(String(profile.email))
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [didPrefillProfile, email, emailTouched, fullName, fullNameTouched])
 
   const phoneDigits = useMemo(() => String(phone || '').replace(/\D/g, ''), [phone])
   const pincodeDigits = useMemo(() => String(pincode || '').replace(/\D/g, ''), [pincode])
@@ -273,7 +309,7 @@ export default function Checkout() {
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
-        <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
             <Link to="/" className="hover:text-zinc-900">
               Home
@@ -360,7 +396,7 @@ export default function Checkout() {
                       return (
                         <div key={product.id} className="rounded-2xl border border-zinc-200 bg-white p-4">
                           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                            <Link to={`/products/${product.id}`} className={cn('relative h-24 w-24 overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br', product.theme)}>
+                            <Link to={productUrl(product)} className={cn('relative h-24 w-24 overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br', product.theme)}>
                               {product.images?.[0] ? (
                                 <img src={product.images[0]} alt={product.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                               ) : null}
@@ -370,7 +406,7 @@ export default function Checkout() {
                               <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <Link to={`/products/${product.id}`} className="truncate text-sm font-semibold text-zinc-900 hover:text-zinc-950">
+                                    <Link to={productUrl(product)} className="truncate text-sm font-semibold text-zinc-900 hover:text-zinc-950">
                                       {product.name}
                                     </Link>
                                     {percentOff ? <span className="rounded-full bg-[#2b2118] px-2.5 py-1 text-[11px] font-semibold text-white">{percentOff}</span> : null}
@@ -434,7 +470,10 @@ export default function Checkout() {
                       <div className="text-xs font-semibold text-zinc-600">Full name</div>
                       <input
                         value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
+                        onChange={(e) => {
+                          setFullNameTouched(true)
+                          setFullName(e.target.value)
+                        }}
                         className={cn(
                           'mt-2 h-11 w-full rounded-2xl border bg-white px-4 text-sm text-zinc-900 outline-none focus:border-zinc-300',
                           submitted && !isValidFullName ? 'border-rose-300' : 'border-zinc-200'
@@ -459,7 +498,10 @@ export default function Checkout() {
                       <div className="text-xs font-semibold text-zinc-600">Email (optional)</div>
                       <input
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmailTouched(true)
+                          setEmail(e.target.value)
+                        }}
                         className={cn(
                           'mt-2 h-11 w-full rounded-2xl border bg-white px-4 text-sm text-zinc-900 outline-none focus:border-zinc-300',
                           submitted && !isValidEmail ? 'border-rose-300' : 'border-zinc-200'

@@ -3,6 +3,13 @@ import { formatInr, formatPercentOff } from '../pages/products.data.js'
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
+const slugify = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
 export default function ProductCard({
   product,
   variant = 'square',
@@ -20,7 +27,8 @@ export default function ProductCard({
 }) {
   const id = String(product?.id || '')
   const isSkeleton = id.startsWith('skeleton-')
-  const to = !isSkeleton && id ? `/products/${id}` : undefined
+  const name = String(product?.name || '')
+  const to = !isSkeleton && id ? `/products/${slugify(name) || 'product'}_id?id=${encodeURIComponent(id)}` : undefined
 
   const price = Number(product?.priceInr || 0)
   const compareAt = Number(product?.compareAtInr || 0)

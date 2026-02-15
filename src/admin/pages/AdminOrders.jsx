@@ -113,7 +113,13 @@ export default function AdminOrders() {
   const saveStatus = async (id) => {
     const row = rows.find((r) => String(r?._id || r?.id) === String(id))
     if (!row) return
+    const previous = row?.status ? String(row.status) : 'pending'
     const status = row?._uiStatus || row?.status || 'pending'
+    const shouldProceed = window.confirm(`Change order #${shortId(id)} status from "${previous}" to "${status}"?`)
+    if (!shouldProceed) {
+      setLocalStatus(id, previous)
+      return
+    }
     setBusyKey(`${id}:status`)
     setError('')
     try {

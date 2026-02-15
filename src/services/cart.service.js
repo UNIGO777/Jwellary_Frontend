@@ -20,11 +20,13 @@ export const cartService = {
 
   async add(productId) {
     const res = await api.post('/api/cart', { body: { productId } })
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('shop:cart:changed'))
     return { ok: Boolean(res?.ok), data: normalizeCartItem(res?.data) }
   },
 
   async remove(productId) {
-    return api.del(`/api/cart/${productId}`)
+    const res = await api.del(`/api/cart/${productId}`)
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('shop:cart:changed'))
+    return res
   }
 }
-

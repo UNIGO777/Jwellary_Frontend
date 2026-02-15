@@ -58,7 +58,7 @@ export default function Home() {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="relative min-h-screen w-full overflow-hidden bg-[#2b2118]">
+      <section className="relative min-h-[50vh] w-full overflow-hidden bg-[#2b2118]">
         <MotionDiv
           initial={{ scale: 1.1, opacity: 0.5 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -76,7 +76,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-black/10" />
         </MotionDiv>
 
-        <div className="relative mx-auto flex min-h-screen max-w-screen-2xl flex-col justify-center px-4 py-24 text-white sm:px-6 lg:px-8">
+        <div className="relative mx-auto flex    flex-col justify-center px-4 py-24 text-white sm:px-6 lg:px-8">
           <MotionDiv
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -111,8 +111,8 @@ export default function Home() {
       </section>
 
       {/* Section 1: Creating, Crafting & Wearing */}
-      <section className="border-t border-zinc-100 px-4 py-20 sm:px-6 lg:px-8">
-        <MotionSection className="mx-auto max-w-screen-2xl">
+      <section className="border-t border-zinc-100 px-4 py-5 md:py-20 sm:px-6 lg:px-8">
+        <MotionSection className="mx-auto  ">
           {error ? <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
           <div className="mb-12 flex flex-col justify-between gap-8 md:flex-row md:items-end">
             <div className="max-w-md">
@@ -140,8 +140,8 @@ export default function Home() {
       </section>
 
       {/* Section 2: Emotion embraces technique */}
-      <section className="bg-[#2b2118] px-4 py-24 text-white sm:px-6 lg:px-8">
-        <MotionSection className="mx-auto max-w-screen-2xl">
+      <section className="bg-[#2b2118] px-4 py-16 md:py-24 text-white sm:px-6 lg:px-8">
+        <MotionSection className="mx-auto  ">
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-20">
             <div className="lg:col-span-4">
               <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Design</div>
@@ -187,8 +187,8 @@ export default function Home() {
       </section>
 
       {/* Section 3: Bestsellers */}
-      <section className="border-t border-zinc-100 px-4 py-20 sm:px-6 lg:px-8">
-        <MotionSection className="mx-auto max-w-screen-2xl">
+      <section className="border-t border-zinc-100 px-4 py-5 md:py-20 sm:px-6 lg:px-8">
+        <MotionSection className="mx-auto  ">
           <div className="mb-12 flex flex-col justify-between gap-8 md:flex-row md:items-end">
             <div className="max-w-md">
               <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Most loved</div>
@@ -216,8 +216,8 @@ export default function Home() {
       </section>
 
       {/* Section 4: We believe in our process */}
-      <section className="bg-[#fbf7f3] px-4 py-24 sm:px-6 lg:px-8">
-        <MotionSection className="mx-auto max-w-screen-2xl">
+      <section className="bg-[#fbf7f3] px-4 py-5 md:py-24 sm:px-6 lg:px-8">
+        <MotionSection className="mx-auto  ">
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-24">
             <div className="relative aspect-[4/5] w-full overflow-hidden lg:aspect-square">
                <img 

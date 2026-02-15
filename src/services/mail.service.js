@@ -5,8 +5,7 @@ export const mailService = {
     return api.post('/api/mail/send', { body: { to, subject, text, html } })
   },
 
-  async contact({ name, email, message }) {
-    return api.post('/api/mail/contact', { body: { name, email, message } })
+  async contact({ name, email, phone, message, orderId, type }) {
+    return api.post('/api/mail/contact', { body: { name, email, phone, message, orderId, type } })
   }
 }
-

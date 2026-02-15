@@ -72,7 +72,7 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto grid max-w-screen-2xl grid-cols-1 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <div className="mx-auto grid   grid-cols-1 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
         <MotionDiv
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

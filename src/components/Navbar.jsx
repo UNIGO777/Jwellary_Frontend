@@ -1,7 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { Heart, ShoppingBag, User } from 'lucide-react'
-import { categoriesService, subcategoriesService, tokenStore } from '../services/index.js'
+import { ApiError, cartService, categoriesService, subcategoriesService, tokenStore, wishlistStore } from '../services/index.js'
 import Logo from '../assets/logo.png'
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
@@ -11,6 +11,8 @@ export default function Navbar({ isHome }) {
   const [scrolled, setScrolled] = useState(() => (typeof window !== 'undefined' ? window.scrollY > 24 : false))
   const headerSolid = !isHome || scrolled || mobileNavOpen
   const isAuthed = Boolean(tokenStore.get())
+  const [wishlistCount, setWishlistCount] = useState(() => wishlistStore.getIds().length)
+  const [cartCount, setCartCount] = useState(0)
 
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false)
   const [categoryGroups, setCategoryGroups] = useState([])
@@ -23,6 +25,51 @@ export default function Navbar({ isHome }) {
     const onScroll = () => setScrolled(window.scrollY > 24)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+
+    const refreshWishlist = () => {
+      if (!alive) return
+      setWishlistCount(wishlistStore.getIds().length)
+    }
+
+    const refreshCart = async () => {
+      if (!alive) return
+      if (!tokenStore.get()) {
+        setCartCount(0)
+        return
+      }
+      try {
+        const res = await cartService.list()
+        if (!alive) return
+        const list = Array.isArray(res?.data) ? res.data : []
+        setCartCount(list.length)
+      } catch (err) {
+        if (!alive) return
+        if (err instanceof ApiError && err.status === 401) setCartCount(0)
+        else setCartCount(0)
+      }
+    }
+
+    refreshWishlist()
+    void refreshCart()
+
+    const onWishlistChanged = () => refreshWishlist()
+    const onCartChanged = () => void refreshCart()
+    const onAuthChanged = () => void refreshCart()
+
+    window.addEventListener('shop:wishlist:changed', onWishlistChanged)
+    window.addEventListener('shop:cart:changed', onCartChanged)
+    window.addEventListener('shop:auth:changed', onAuthChanged)
+
+    return () => {
+      alive = false
+      window.removeEventListener('shop:wishlist:changed', onWishlistChanged)
+      window.removeEventListener('shop:cart:changed', onCartChanged)
+      window.removeEventListener('shop:auth:changed', onAuthChanged)
+    }
   }, [])
 
   useEffect(() => {
@@ -122,7 +169,7 @@ export default function Navbar({ isHome }) {
 
   const iconLinkClass = ({ isActive }) =>
     cn(
-      'grid h-10 w-10 place-items-center rounded-full transition-colors',
+      'relative grid h-10 w-10 place-items-center rounded-full transition-colors',
       headerSolid
         ? isActive
           ? 'bg-[#fbf7f3] text-[#2b2118]'
@@ -270,9 +317,19 @@ export default function Navbar({ isHome }) {
           <div className="ml-2 flex items-center gap-1">
             <NavLink to="/wishlist" className={iconLinkClass} aria-label="Wishlist" onClick={() => setCategoryMenuOpen(false)}>
               <Heart className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
+              {wishlistCount > 0 ? (
+                <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#2b2118] px-1 text-[11px] font-bold leading-none text-white">
+                  {wishlistCount > 99 ? '99+' : String(wishlistCount)}
+                </span>
+              ) : null}
             </NavLink>
             <NavLink to="/cart" className={iconLinkClass} aria-label="Cart" onClick={() => setCategoryMenuOpen(false)}>
               <ShoppingBag className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
+              {cartCount > 0 ? (
+                <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#2b2118] px-1 text-[11px] font-bold leading-none text-white">
+                  {cartCount > 99 ? '99+' : String(cartCount)}
+                </span>
+              ) : null}
             </NavLink>
             <NavLink
               to={isAuthed ? '/profile' : '/auth'}
@@ -307,7 +364,7 @@ export default function Navbar({ isHome }) {
 
       {mobileNavOpen ? (
         <div className="border-t border-zinc-200 bg-white sm:hidden">
-          <div className="mx-auto max-w-screen-2xl px-4 py-3 sm:px-6 lg:px-8">
+          <div className="mx-auto   px-4 py-3 sm:px-6 lg:px-8">
             <nav className="grid gap-2 text-sm">
               {categoryGroups.length ? (
                 <div className="rounded-xl border border-zinc-200 bg-white p-3">

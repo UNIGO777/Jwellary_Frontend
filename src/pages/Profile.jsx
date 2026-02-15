@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, authService, mailService, tokenStore } from '../services/index.js'
+import { ApiError, authService, tokenStore } from '../services/index.js'
 import PageLoader from '../components/PageLoader.jsx'
 
 const MotionDiv = motion.div
@@ -26,9 +26,6 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
-
-  const [mailBusy, setMailBusy] = useState(false)
-  const [mailMessage, setMailMessage] = useState('')
 
   useEffect(() => {
     if (!tokenStore.get()) return
@@ -89,30 +86,11 @@ export default function Profile() {
     }
   }
 
-  const sendTestEmail = async () => {
-    if (!user?.email) return
-    setMailBusy(true)
-    setMailMessage('')
-    setError('')
-    try {
-      const res = await mailService.send({
-        to: user.email,
-        subject: 'Om Abhusan Jwellary • Test Email',
-        text: 'This is a test email from Om Abhusan Jwellary.'
-      })
-      setMailMessage(res?.id ? `Email sent (id: ${res.id})` : 'Email sent')
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setMailBusy(false)
-    }
-  }
-
   if (!tokenStore.get()) {
     return (
       <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <div className="bg-transparent">
-          <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto  px-4 py-8 sm:px-6 lg:px-8">
             <div className="rounded-3xl border border-zinc-200 bg-white p-8">
               <div className="text-sm font-semibold text-zinc-900">You are not logged in</div>
               <div className="mt-2 text-sm text-zinc-600">Login to view your profile, orders, and cart.</div>
@@ -134,7 +112,7 @@ export default function Profile() {
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
-        <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto  px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-zinc-900">Profile</div>
@@ -180,20 +158,7 @@ export default function Profile() {
                       <div className="mt-1 text-sm font-semibold text-zinc-900">{user?.email || '-'}</div>
                     </div>
                   </div>
-                  <div className="mt-5">
-                    <button
-                      type="button"
-                      onClick={() => void sendTestEmail()}
-                      disabled={mailBusy || !user?.email}
-                      className={cn(
-                        'rounded-2xl px-4 py-3 text-sm font-semibold transition',
-                        mailBusy || !user?.email ? 'cursor-not-allowed bg-zinc-200 text-zinc-500' : 'bg-zinc-900 text-white hover:bg-zinc-950'
-                      )}
-                    >
-                      {mailBusy ? 'Sending...' : 'Send test email'}
-                    </button>
-                    {mailMessage ? <div className="mt-3 text-xs font-medium text-emerald-700">{mailMessage}</div> : null}
-                  </div>
+                 
                 </div>
               </section>
 

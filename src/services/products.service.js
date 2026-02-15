@@ -34,9 +34,9 @@ export const normalizeProduct = (product) => {
   if (!product) return null
   const making = asNumber(product?.makingCost?.amount)
   const other = asNumber(product?.otherCharges?.amount)
-  const computedPrice = asNumber(product?.attributes?.priceInr)
+  const computedPrice = asNumber(product?.attributes?.priceInr ?? product?.priceInr)
   const priceInr = computedPrice > 0 ? computedPrice : making + other
-  const compareAtInr = asNumber(product?.attributes?.compareAtInr)
+  const compareAtInr = asNumber(product?.attributes?.compareAtInr ?? product?.compareAtInr)
 
   const stock = asNumber(product?.stock)
   const inStock = stock > 0

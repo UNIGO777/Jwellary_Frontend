@@ -44,7 +44,24 @@ export default function Orders() {
       .list({ page, limit: 20 })
       .then((res) => {
         if (!alive) return
-        setOrders(Array.isArray(res?.data) ? res.data : [])
+        const list = Array.isArray(res?.data) ? res.data : []
+        setOrders(list)
+        const missingJustPlaced = Boolean(justPlaced) && !list.some((o) => String(o?._id || o?.id) === String(justPlaced))
+        if (missingJustPlaced) {
+          ordersService
+            .getById(justPlaced)
+            .then((one) => {
+              if (!alive) return
+              const order = one?.data
+              const id = order?._id || order?.id
+              if (!id) return
+              setOrders((prev) => {
+                const has = prev.some((o) => String(o?._id || o?.id) === String(id))
+                return has ? prev : [order, ...prev]
+              })
+            })
+            .catch(() => {})
+        }
       })
       .catch((err) => {
         if (!alive) return
@@ -61,7 +78,7 @@ export default function Orders() {
     return () => {
       alive = false
     }
-  }, [navigate, page])
+  }, [navigate, page, justPlaced])
 
   const empty = !loading && orders.length === 0
 
@@ -70,7 +87,7 @@ export default function Orders() {
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
-        <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto  px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-zinc-900">Orders</div>

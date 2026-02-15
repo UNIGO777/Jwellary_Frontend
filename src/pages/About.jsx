@@ -18,7 +18,7 @@ export default function About() {
             <div className="absolute inset-0 bg-black/35" />
           </div>
 
-          <div className="relative mx-auto max-w-screen-2xl px-4 py-24 sm:px-6 lg:px-8">
+          <div className="relative mx-auto  px-4 py-24 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
               <div className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">OM ABHUSAN</div>
               <h1 className="mt-4 font-serif text-5xl leading-tight sm:text-6xl">About Us</h1>
@@ -30,7 +30,7 @@ export default function About() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-screen-2xl px-4 py-20 sm:px-6 lg:px-8">
+        <section className="mx-auto  px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-16">
             <div className="lg:col-span-5">
               <h2 className="font-serif text-4xl leading-tight text-[#2b2118] sm:text-5xl">Our story</h2>

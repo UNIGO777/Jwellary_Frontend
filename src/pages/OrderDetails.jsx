@@ -71,7 +71,7 @@ export default function OrderDetails() {
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
-        <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-zinc-900">Order #{shortId(orderId)}</div>

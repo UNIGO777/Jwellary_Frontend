@@ -9,6 +9,19 @@ const MotionDiv = motion.div
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
+const slugify = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+const productUrl = (product) => {
+  const id = String(product?.id || '')
+  const name = slugify(product?.name || '') || 'product'
+  return id ? `/products/${name}_id?id=${encodeURIComponent(id)}` : '/products'
+}
+
 const StarRow = ({ value = 0 }) => {
   const rounded = Math.round(Number(value || 0) * 10) / 10
   const full = Math.max(0, Math.min(5, Math.floor(rounded)))
@@ -140,7 +153,7 @@ export default function Cart() {
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="bg-transparent">
-        <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto   px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
             <Link to="/" className="hover:text-zinc-900">
               Home
@@ -223,7 +236,7 @@ export default function Cart() {
                         <div key={product.id} className="rounded-2xl border border-zinc-200 bg-white p-4">
                           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                             <Link
-                              to={`/products/${product.id}`}
+                              to={productUrl(product)}
                               className={cn('relative h-24 w-24 overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br', product.theme)}
                             >
                               {product.images?.[0] ? (
@@ -235,7 +248,7 @@ export default function Cart() {
                               <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <Link to={`/products/${product.id}`} className="truncate text-sm font-semibold text-zinc-900 hover:text-zinc-950">
+                                    <Link to={productUrl(product)} className="truncate text-sm font-semibold text-zinc-900 hover:text-zinc-950">
                                       {product.name}
                                     </Link>
                                     {percentOff ? <span className="rounded-full bg-[#2b2118] px-2.5 py-1 text-[11px] font-semibold text-white">{percentOff}</span> : null}

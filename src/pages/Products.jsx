@@ -71,6 +71,13 @@ export default function Products() {
   const [minPrice, setMinPrice] = useState(null)
   const [maxPrice, setMaxPrice] = useState(null)
 
+  useEffect(() => {
+    const sp = new URLSearchParams(location.search)
+    const key = ['q', 'search', 'term', 'category'].find((k) => sp.has(k))
+    const next = key ? (sp.get(key) || '').trim() : ''
+    queueMicrotask(() => setQuery(next))
+  }, [location.search])
+
   const buildProductsUrl = ({ categoryId, subCategoryId } = {}) => {
     const sp = new URLSearchParams()
     if (categoryId) sp.set('categoryId', String(categoryId))
@@ -401,7 +408,6 @@ export default function Products() {
     return new Set(wishlistStore.getIds())
   }, [storageVersion])
 
-  const bannerImage = 'https://images.unsplash.com/photo-1605100804567-1ffe942b5cd6?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
   const bannerSideImage = 'https://images.unsplash.com/photo-1613945407943-59cd755fd69e?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
 
   const filtersPanel = (
@@ -749,24 +755,7 @@ export default function Products() {
             </aside>
 
             <section className="lg:col-span-9">
-              <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white">
-                <div className="grid grid-cols-1 gap-0 lg:grid-cols-2">
-                  <div className="relative min-h-[240px] bg-zinc-100 lg:min-h-[320px]">
-                    <img src={bannerImage} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-                  </div>
-                  <div className="p-6 sm:p-8">
-                    <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Collections</div>
-                    <div className="mt-3 text-2xl font-semibold leading-tight tracking-tight text-zinc-900 sm:text-3xl">
-                      Explore the various collection
-                      <br />
-                      of Om Abhusan Jwellary
-                    </div>
-                    <div className="mt-3 max-w-md text-sm leading-6 text-zinc-600">
-                      Don&apos;t miss out on stunning designs—crafted for daily elegance and special moments.
-                    </div>
-                  </div>
-                </div>
-              </div>
+              
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
