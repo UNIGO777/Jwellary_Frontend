@@ -7,6 +7,8 @@ const MotionDiv = motion.div
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
+const VIDEO_URL = 'https://www.pexels.com/download/video/31757664/'
+
 const getErrorMessage = (err) => {
   if (err instanceof ApiError) return err.message
   if (err?.message) return String(err.message)
@@ -72,20 +74,52 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto grid   grid-cols-1 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <div className="mx-auto grid w-full grid-cols-1 gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:items-stretch lg:gap-10 lg:px-8">
         <MotionDiv
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="rounded-2xl bg-white p-8 text-zinc-900 shadow-sm"
+          className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"
         >
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold tracking-wide text-zinc-900">OM ABHUSAN JWELLARY</div>
-            <div className="rounded-full bg-zinc-100 px-4 py-2 text-xs font-semibold text-zinc-700">Admin Panel</div>
-          </div>
+          <video className="absolute inset-0 h-full w-full object-cover" src={VIDEO_URL} autoPlay muted loop playsInline preload="metadata" />
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-700/70 via-violet-700/35 to-indigo-950/70" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
-          <h1 className="mt-8 text-3xl font-semibold tracking-tight">Admin login</h1>
-          <p className="mt-2 text-sm text-zinc-600">Enter admin credentials, then verify OTP.</p>
+          <div className="relative flex h-full min-h-[320px] flex-col justify-between p-8 text-white lg:min-h-[620px]">
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-sm font-semibold tracking-wide text-white/95">OM ABHUSAN JWELLARY</div>
+              <div className="rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur">Admin Panel</div>
+            </div>
+
+            <div className="max-w-md">
+              <div className="text-4xl font-semibold leading-tight tracking-tight">Admin access</div>
+              <div className="mt-3 text-sm leading-6 text-white/85">Enter admin credentials, then verify OTP.</div>
+            </div>
+
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Protected area</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {['Products', 'Orders', 'Rates', 'Users'].map((x) => (
+                  <div
+                    key={x}
+                    className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur"
+                  >
+                    {x}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </MotionDiv>
+
+        <MotionDiv
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm"
+        >
+          <div className="text-3xl font-semibold tracking-tight text-zinc-900">Admin login</div>
+          <div className="mt-2 text-sm text-zinc-600">{isVerify ? 'Enter the OTP sent to admin email' : 'Please enter your details to continue'}</div>
 
           <div className="mt-8 space-y-4">
             <div>
@@ -93,7 +127,7 @@ export default function AdminLogin() {
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-2 w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300"
+                className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300"
                 placeholder="admin@email.com"
                 type="email"
                 autoComplete="email"
@@ -106,7 +140,7 @@ export default function AdminLogin() {
                 <input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="mt-2 w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300"
                   placeholder="Enter admin password"
                   type="password"
                   autoComplete="current-password"
@@ -118,7 +152,7 @@ export default function AdminLogin() {
                 <input
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  className="mt-2 w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300"
                   placeholder="123456"
                   inputMode="numeric"
                 />
@@ -140,7 +174,7 @@ export default function AdminLogin() {
                 disabled={primaryDisabled}
                 onClick={sendOtp}
                 className={cn(
-                  'w-full rounded-full px-4 py-3 text-sm font-semibold transition',
+                  'w-full rounded-xl px-4 py-3 text-sm font-semibold transition',
                   primaryDisabled ? 'cursor-not-allowed bg-zinc-300 text-white' : 'bg-zinc-900 text-white hover:bg-zinc-950'
                 )}
               >
@@ -152,7 +186,7 @@ export default function AdminLogin() {
                 disabled={primaryDisabled}
                 onClick={verifyOtp}
                 className={cn(
-                  'w-full rounded-full px-4 py-3 text-sm font-semibold transition',
+                  'w-full rounded-xl px-4 py-3 text-sm font-semibold transition',
                   primaryDisabled ? 'cursor-not-allowed bg-zinc-300 text-white' : 'bg-zinc-900 text-white hover:bg-zinc-950'
                 )}
               >
@@ -167,7 +201,7 @@ export default function AdminLogin() {
                   disabled={busy || resendCooldown > 0 || !email || !password}
                   onClick={sendOtp}
                   className={cn(
-                    'flex-1 rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50',
+                    'flex-1 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50',
                     busy || resendCooldown > 0 || !email || !password ? 'cursor-not-allowed opacity-60 hover:bg-white' : ''
                   )}
                 >
@@ -181,38 +215,12 @@ export default function AdminLogin() {
                     setResendCooldown(0)
                     resetTransient()
                   }}
-                  className="flex-1 rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+                  className="flex-1 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
                 >
                   Back
                 </button>
               </div>
             ) : null}
-          </div>
-        </MotionDiv>
-
-        <MotionDiv
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.05 }}
-          className="relative overflow-hidden rounded-l-[70px]"
-        >
-          <img
-            className="absolute inset-0 h-full w-full object-cover"
-            src="https://unsplash.com/photos/PPizseKigaw/download?force=true&w=2400"
-            alt=""
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/70 to-white/40" />
-
-          <div className="relative flex h-full min-h-[420px] flex-col justify-end p-8 lg:min-h-[560px]">
-            <div className="max-w-md">
-              <div className="text-3xl font-semibold leading-tight text-zinc-900">
-                Manage products,
-                <br />
-                orders & promotions
-              </div>
-              <div className="mt-3 text-sm leading-6 text-zinc-700">Secure admin access using OTP verification.</div>
-            </div>
           </div>
         </MotionDiv>
       </div>

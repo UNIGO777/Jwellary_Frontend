@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError, adminAuthService, api, categoriesService, withAdminAuth } from '../../services/index.js'
+import AdminTopbar from '../components/AdminTopbar.jsx'
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -119,18 +120,20 @@ export default function AdminSubcategories() {
 
   return (
     <div>
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-serif text-stone-900">Subcategories</h1>
-          <p className="mt-1 text-stone-600">Manage subcategories</p>
-        </div>
-        <Link
-          to="/admin/subcategories/new"
-          className="inline-flex items-center rounded-md bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800"
-        >
-          Add Subcategory
-        </Link>
-      </header>
+      <AdminTopbar
+        sectionLabel="Subcategories"
+        title="Subcategories"
+        subtitle="Manage subcategories"
+        showSearch={false}
+        actions={
+          <Link
+            to="/admin/subcategories/new"
+            className="inline-flex h-11 items-center rounded-full bg-[#2b2118] px-5 text-sm font-extrabold text-white hover:bg-[#1f1711]"
+          >
+            Add Subcategory
+          </Link>
+        }
+      />
 
       {error ? <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 
@@ -260,4 +263,3 @@ export default function AdminSubcategories() {
     </div>
   )
 }
-

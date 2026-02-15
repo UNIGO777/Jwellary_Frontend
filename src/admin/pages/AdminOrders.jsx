@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError, adminAuthService, api, withAdminAuth } from '../../services/index.js'
+import AdminTopbar from '../components/AdminTopbar.jsx'
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -170,10 +171,7 @@ export default function AdminOrders() {
 
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-3xl font-serif text-stone-900">Orders</h1>
-        <p className="mt-1 text-stone-600">View and update order statuses</p>
-      </header>
+      <AdminTopbar sectionLabel="Orders" title="Orders" subtitle="View and update order statuses" showSearch={false} />
 
       {error ? <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 

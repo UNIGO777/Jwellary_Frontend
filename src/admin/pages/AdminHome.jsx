@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, adminAuthService, adminTokenStore, api } from '../../services/index.js'
+import AdminTopbar from '../components/AdminTopbar.jsx'
 
 const MotionDiv = motion.div
 
@@ -12,15 +13,6 @@ const getErrorMessage = (err) => {
 }
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
-
-const getInitials = (value) => {
-  const s = String(value || '').trim()
-  if (!s) return 'A'
-  const name = s.split('@')[0]
-  const parts = name.split(/[.\s_-]+/).filter(Boolean)
-  const letters = (parts.length ? parts : [name]).slice(0, 2).map((p) => p[0]?.toUpperCase()).filter(Boolean)
-  return letters.join('') || 'A'
-}
 
 const formatTodayLabel = () => {
   const d = new Date()
@@ -107,7 +99,6 @@ export default function AdminHome() {
   }, [navigate])
 
   const displayName = adminEmail ? adminEmail.split('@')[0] : 'Admin'
-  const initials = getInitials(adminEmail)
   const totals = data?.totals || {}
   const usersTotal = Number.isFinite(Number(totals?.users)) ? Number(totals.users) : 0
   const ordersTotal = Number.isFinite(Number(totals?.orders)) ? Number(totals.orders) : 0
@@ -121,58 +112,13 @@ export default function AdminHome() {
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="rounded-none border-0 bg-transparent px-0 py-0 shadow-none">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Dashboard</div>
-            <div className="mt-1 truncate text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
-              Good morning, {displayName}
-            </div>
-            <div className="mt-1 text-sm font-semibold text-slate-500">{formatTodayLabel()}</div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex h-11 w-full max-w-[420px] items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-zinc-800 lg:w-[420px]">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-slate-400" fill="none" aria-hidden="true">
-                <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M16.2 16.2 21 21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-              <input className="h-full w-full bg-transparent text-sm outline-none placeholder:text-slate-400" placeholder="Search" />
-            </div>
-
-            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-zinc-200 bg-white" aria-label="Messages">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-zinc-700" fill="none" aria-hidden="true">
-                <path
-                  d="M4.5 6.5A2.5 2.5 0 0 1 7 4h10a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 17 16H9l-3.8 3.2a.8.8 0 0 1-1.3-.6V16H7A2.5 2.5 0 0 1 4.5 13.5v-7Z"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinejoin="round"
-                />
-                <path d="M8 8.5h8M8 11.5h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            </button>
-            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-zinc-200 bg-white" aria-label="Notifications">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-zinc-700" fill="none" aria-hidden="true">
-                <path
-                  d="M12 3a6 6 0 0 0-6 6v3.6l-1.4 2.8h14.8L18 12.6V9a6 6 0 0 0-6-6Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-                <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </button>
-
-            <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white px-3 py-2">
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-[#2b2118] text-xs font-extrabold text-white">
-                {initials}
-              </div>
-              <div className="hidden min-w-0 sm:block">
-                <div className="truncate text-sm font-extrabold text-zinc-900">{displayName}</div>
-                <div className="truncate text-[11px] font-semibold text-zinc-500">Administrator</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AdminTopbar
+          sectionLabel="Dashboard"
+          title={`Good morning, ${displayName}`}
+          subtitle={formatTodayLabel()}
+          searchPlaceholder="Search"
+          adminEmail={adminEmail}
+        />
 
         {error ? (
           <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div>

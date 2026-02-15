@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { ApiError, adminAuthService, api, resolveAssetUrl, withAdminAuth } from '../../services/index.js'
+import AdminTopbar from '../components/AdminTopbar.jsx'
 
 const MotionTr = motion.tr
 
@@ -15,7 +16,6 @@ export default function AdminProducts() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   
-  const [adminEmail, setAdminEmail] = useState('')
   const [products, setProducts] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -24,23 +24,6 @@ export default function AdminProducts() {
   const page = Number(searchParams.get('page')) || 1
   const limit = Number(searchParams.get('limit')) || 20
   const q = searchParams.get('q') || ''
-
-  // Admin Auth Check & Get Email
-  useEffect(() => {
-    let alive = true
-    adminAuthService.me()
-      .then((res) => {
-        if (!alive) return
-        setAdminEmail(res?.data?.email || '')
-      })
-      .catch((err) => {
-        if (err.status === 401) {
-          adminAuthService.logout()
-          navigate('/admin/login', { replace: true })
-        }
-      })
-    return () => { alive = false }
-  }, [navigate])
 
   // Fetch Products
   useEffect(() => {
@@ -102,16 +85,7 @@ export default function AdminProducts() {
 
   return (
     <div>
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-serif text-stone-900">Products</h1>
-          <p className="text-stone-600 mt-1">Manage your jewelry inventory</p>
-        </div>
-        <div className="flex items-center gap-4">
-           <span className="text-sm text-stone-500">{adminEmail}</span>
-           <button onClick={() => { adminAuthService.logout(); navigate('/admin/login') }} className="text-sm text-red-600 hover:text-red-800">Logout</button>
-        </div>
-      </header>
+      <AdminTopbar sectionLabel="Inventory" title="Products" subtitle="Manage your jewelry inventory" showSearch={false} />
 
       {error ? <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 

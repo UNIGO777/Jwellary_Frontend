@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError, adminAuthService, api, withAdminAuth } from '../../services/index.js'
+import AdminTopbar from '../components/AdminTopbar.jsx'
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -177,10 +178,12 @@ export default function AdminDiamondPrices() {
 
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-3xl font-serif text-stone-900">Diamond Price Management</h1>
-        <p className="mt-1 text-stone-600">Assign manual prices per carat for diamond types.</p>
-      </header>
+      <AdminTopbar
+        sectionLabel="Diamond Prices"
+        title="Diamond Price Management"
+        subtitle="Assign manual prices per carat for diamond types."
+        showSearch={false}
+      />
 
       {error ? <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 

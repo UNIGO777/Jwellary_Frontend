@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ApiError, adminAuthService, api, categoriesService, withAdminAuth } from '../../services/index.js'
+import AdminTopbar from '../components/AdminTopbar.jsx'
 
 const getErrorMessage = (err) => {
   if (err instanceof ApiError) return err.message
@@ -123,19 +124,21 @@ export default function AdminSubcategoryForm() {
 
   return (
     <div className="mx-auto py-5">
-      <header className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-serif text-stone-900">{isEdit ? 'Edit Subcategory' : 'Create Subcategory'}</h1>
-          <p className="mt-1 text-stone-600">Attach subcategories to a category.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate('/admin/subcategories')}
-          className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
-        >
-          Back
-        </button>
-      </header>
+      <AdminTopbar
+        sectionLabel="Subcategories"
+        title={isEdit ? 'Edit Subcategory' : 'Create Subcategory'}
+        subtitle="Attach subcategories to a category."
+        showSearch={false}
+        actions={
+          <button
+            type="button"
+            onClick={() => navigate('/admin/subcategories')}
+            className="inline-flex h-11 items-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-extrabold text-[#2b2118] hover:bg-[#fbf7f3]"
+          >
+            Back
+          </button>
+        }
+      />
 
       {error ? <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 
@@ -201,4 +204,3 @@ export default function AdminSubcategoryForm() {
     </div>
   )
 }
-
