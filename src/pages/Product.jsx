@@ -331,52 +331,8 @@ export default function Product() {
 
   const isAuthed = Boolean(tokenStore.get())
 
-  if (loading) {
-    return (
-      <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-        <div className="bg-transparent">
-          <div className="mx-auto   px-4 py-10 sm:px-6 lg:px-8">
-            <PageLoader />
-          </div>
-        </div>
-      </MotionDiv>
-    )
-  }
-
-  if (!product) {
-    return (
-      <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-        <div className="bg-transparent">
-          <div className="mx-auto   px-4 py-10 sm:px-6 lg:px-8">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-8">
-              {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
-              <div className="text-sm text-zinc-700">Product not found</div>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Link
-                  to="/products"
-                  className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
-                >
-                  Back to Products
-                </Link>
-                <Link to="/" className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
-                  Home
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </MotionDiv>
-    )
-  }
-
-  const percentOff = formatPercentOff(product)
-  const disableBuy = !product.inStock
-  const images = product.images?.length ? product.images : []
-  const thumbs = images.length ? images.slice(0, 4) : Array.from({ length: 4 }).map(() => '')
-  const selectedImage = images[imageIndex] || images[0] || ''
-  const sizeOptions = product?.hasSizes && Array.isArray(product?.sizes) ? product.sizes.map((s) => String(s)).filter(Boolean) : []
-
   useEffect(() => {
+    if (!product) return undefined
     const canonicalPath = buildProductUrl(product)
     const canonicalUrl = `${window.location.origin}${canonicalPath}`
     const images = Array.isArray(product?.images) ? product.images.filter(Boolean) : []
@@ -434,6 +390,51 @@ export default function Product() {
       script.remove()
     }
   }, [product])
+
+  if (loading) {
+    return (
+      <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+        <div className="bg-transparent">
+          <div className="mx-auto   px-4 py-10 sm:px-6 lg:px-8">
+            <PageLoader />
+          </div>
+        </div>
+      </MotionDiv>
+    )
+  }
+
+  if (!product) {
+    return (
+      <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+        <div className="bg-transparent">
+          <div className="mx-auto   px-4 py-10 sm:px-6 lg:px-8">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-8">
+              {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
+              <div className="text-sm text-zinc-700">Product not found</div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link
+                  to="/products"
+                  className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                >
+                  Back to Products
+                </Link>
+                <Link to="/" className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+                  Home
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </MotionDiv>
+    )
+  }
+
+  const percentOff = formatPercentOff(product)
+  const disableBuy = !product.inStock
+  const images = product.images?.length ? product.images : []
+  const thumbs = images.length ? images.slice(0, 4) : Array.from({ length: 4 }).map(() => '')
+  const selectedImage = images[imageIndex] || images[0] || ''
+  const sizeOptions = product?.hasSizes && Array.isArray(product?.sizes) ? product.sizes.map((s) => String(s)).filter(Boolean) : []
 
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
