@@ -34,6 +34,44 @@ const buildProductUrl = (product) => {
   return `/products/${name}_id?id=${encodeURIComponent(id)}`
 }
 
+const toPlainText = (value) => {
+  const html = String(value || '')
+  if (!html) return ''
+  const el = document.createElement('div')
+  el.innerHTML = html
+  return String(el.textContent || '').replace(/\s+/g, ' ').trim()
+}
+
+const truncate = (value, maxLen) => {
+  const s = String(value || '').trim()
+  if (!s) return ''
+  const n = Number(maxLen || 0)
+  if (!Number.isFinite(n) || n <= 0) return s
+  if (s.length <= n) return s
+  return `${s.slice(0, Math.max(0, n - 1)).trimEnd()}…`
+}
+
+const upsertHeadTag = ({ selector, create, update }) => {
+  const existing = document.head.querySelector(selector)
+  if (existing) {
+    if (existing.dataset.productSeo !== '1') {
+      if (existing.getAttribute('content') !== null && existing.dataset.prevContent === undefined) {
+        existing.dataset.prevContent = String(existing.getAttribute('content') || '')
+      }
+      if (existing.getAttribute('href') !== null && existing.dataset.prevHref === undefined) {
+        existing.dataset.prevHref = String(existing.getAttribute('href') || '')
+      }
+    }
+    existing.dataset.productSeo = '1'
+    update(existing)
+    return existing
+  }
+  const el = create()
+  el.dataset.productSeo = '1'
+  document.head.appendChild(el)
+  return el
+}
+
 const StarRow = ({ value = 0 }) => {
   const rounded = Math.round(Number(value || 0) * 10) / 10
   const full = Math.max(0, Math.min(5, Math.floor(rounded)))
@@ -95,6 +133,106 @@ export default function Product() {
   const [reviewBusy, setReviewBusy] = useState(false)
   const [reviewMessage, setReviewMessage] = useState('')
   const [reviewNeedsLogin, setReviewNeedsLogin] = useState(false)
+
+  useEffect(() => {
+    if (!product) return undefined
+    const canonicalPath = buildProductUrl(product)
+    const canonicalUrl = `${window.location.origin}${canonicalPath}`
+    const title = `${product?.name || 'Product'} | OM ABHUSAN JWELLARY`
+    const rawDescription = product?.description ? toPlainText(product.description) : ''
+    const fallbackDescription = Array.isArray(product?.highlights) ? product.highlights.join(' · ') : ''
+    const description = truncate(rawDescription || fallbackDescription || `${product?.name || 'Product'} by OM ABHUSAN JWELLARY.`, 160)
+    const image = Array.isArray(product?.images) && product.images.length ? String(product.images[0] || '') : ''
+
+    const prevTitle = document.title
+    document.title = title
+
+    upsertHeadTag({
+      selector: 'meta[name="description"]',
+      create: () => {
+        const m = document.createElement('meta')
+        m.setAttribute('name', 'description')
+        return m
+      },
+      update: (m) => m.setAttribute('content', description)
+    })
+
+    upsertHeadTag({
+      selector: 'meta[name="robots"]',
+      create: () => {
+        const m = document.createElement('meta')
+        m.setAttribute('name', 'robots')
+        return m
+      },
+      update: (m) => m.setAttribute('content', 'index,follow')
+    })
+
+    upsertHeadTag({
+      selector: 'link[rel="canonical"]',
+      create: () => {
+        const l = document.createElement('link')
+        l.setAttribute('rel', 'canonical')
+        return l
+      },
+      update: (l) => l.setAttribute('href', canonicalUrl)
+    })
+
+    const setOg = (property, content) =>
+      upsertHeadTag({
+        selector: `meta[property="${property}"]`,
+        create: () => {
+          const m = document.createElement('meta')
+          m.setAttribute('property', property)
+          return m
+        },
+        update: (m) => m.setAttribute('content', String(content || ''))
+      })
+
+    setOg('og:title', title)
+    setOg('og:description', description)
+    setOg('og:type', 'product')
+    setOg('og:url', canonicalUrl)
+    setOg('og:site_name', 'OM ABHUSAN JWELLARY')
+    if (image) setOg('og:image', image)
+
+    const setTwitter = (name, content) =>
+      upsertHeadTag({
+        selector: `meta[name="${name}"]`,
+        create: () => {
+          const m = document.createElement('meta')
+          m.setAttribute('name', name)
+          return m
+        },
+        update: (m) => m.setAttribute('content', String(content || ''))
+      })
+
+    setTwitter('twitter:card', image ? 'summary_large_image' : 'summary')
+    setTwitter('twitter:title', title)
+    setTwitter('twitter:description', description)
+    if (image) setTwitter('twitter:image', image)
+
+    return () => {
+      document.title = prevTitle
+      const nodes = Array.from(document.head.querySelectorAll('[data-product-seo="1"]'))
+      nodes.forEach((el) => {
+        const prevContent = el.dataset.prevContent
+        const prevHref = el.dataset.prevHref
+        if (prevContent !== undefined && el.getAttribute('content') !== null) {
+          el.setAttribute('content', prevContent)
+          delete el.dataset.prevContent
+          delete el.dataset.productSeo
+          return
+        }
+        if (prevHref !== undefined && el.getAttribute('href') !== null) {
+          el.setAttribute('href', prevHref)
+          delete el.dataset.prevHref
+          delete el.dataset.productSeo
+          return
+        }
+        el.remove()
+      })
+    }
+  }, [product])
 
   useEffect(() => {
     let alive = true
@@ -237,6 +375,65 @@ export default function Product() {
   const thumbs = images.length ? images.slice(0, 4) : Array.from({ length: 4 }).map(() => '')
   const selectedImage = images[imageIndex] || images[0] || ''
   const sizeOptions = product?.hasSizes && Array.isArray(product?.sizes) ? product.sizes.map((s) => String(s)).filter(Boolean) : []
+
+  useEffect(() => {
+    const canonicalPath = buildProductUrl(product)
+    const canonicalUrl = `${window.location.origin}${canonicalPath}`
+    const images = Array.isArray(product?.images) ? product.images.filter(Boolean) : []
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product?.name || 'Product',
+      description: truncate(toPlainText(product?.description || ''), 500) || undefined,
+      image: images.length ? images : undefined,
+      sku: product?.sku ? String(product.sku) : undefined,
+      brand: { '@type': 'Brand', name: 'OM ABHUSAN JWELLARY' },
+      offers: {
+        '@type': 'Offer',
+        url: canonicalUrl,
+        priceCurrency: 'INR',
+        price: Number(product?.priceInr || 0) || undefined,
+        availability: product?.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
+      }
+    }
+
+    const rating = Number(product?.rating)
+    const reviewsCount = Number(product?.reviewsCount)
+    if (Number.isFinite(rating) && rating > 0 && Number.isFinite(reviewsCount) && reviewsCount > 0) {
+      schema.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: rating,
+        reviewCount: reviewsCount
+      }
+    }
+
+    Object.keys(schema).forEach((k) => {
+      if (schema[k] === undefined) delete schema[k]
+    })
+    if (schema.offers) {
+      Object.keys(schema.offers).forEach((k) => {
+        if (schema.offers[k] === undefined) delete schema.offers[k]
+      })
+    }
+
+    const script = upsertHeadTag({
+      selector: 'script[type="application/ld+json"][data-schema="product"]',
+      create: () => {
+        const s = document.createElement('script')
+        s.setAttribute('type', 'application/ld+json')
+        s.dataset.schema = 'product'
+        return s
+      },
+      update: (s) => {
+        s.textContent = JSON.stringify(schema)
+      }
+    })
+
+    return () => {
+      script.remove()
+    }
+  }, [product])
 
   return (
     <MotionDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
