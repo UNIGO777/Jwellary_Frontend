@@ -279,6 +279,9 @@ export default function AdminProductForm() {
     }
   }, [material, materialType, materialTypes.gold, materialTypes.silver])
 
+  const MAX_IMAGE_BYTES = 3 * 1024 * 1024
+  const MAX_VIDEO_BYTES = 10 * 1024 * 1024
+
   const uploadMultipleImages = async (files) => {
     const fd = new FormData()
     for (const f of Array.from(files || [])) fd.append('images', f)
@@ -345,10 +348,20 @@ export default function AdminProductForm() {
   const onPickImages = async (e) => {
     const files = e.target.files
     if (!files || files.length === 0) return
+    const list = Array.from(files)
+    const allowed = list.filter((f) => Number(f?.size || 0) <= MAX_IMAGE_BYTES)
+    const rejected = list.filter((f) => Number(f?.size || 0) > MAX_IMAGE_BYTES)
+    if (rejected.length) {
+      setError(`Max image size is 3 MB. Remove ${rejected.length} large file(s) and try again.`)
+    }
+    if (!allowed.length) {
+      e.target.value = ''
+      return
+    }
     setUploadingImages(true)
     setError('')
     try {
-      const paths = await uploadMultipleImages(files)
+      const paths = await uploadMultipleImages(allowed)
       setImages((prev) => Array.from(new Set([...prev, ...paths])))
     } catch (err) {
       setError(err?.message ? String(err.message) : 'Failed to upload images')
@@ -361,6 +374,11 @@ export default function AdminProductForm() {
   const onPickSingleImage = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (Number(file?.size || 0) > MAX_IMAGE_BYTES) {
+      setError('Max image size is 3 MB.')
+      e.target.value = ''
+      return
+    }
     setUploadingImages(true)
     setError('')
     try {
@@ -377,6 +395,11 @@ export default function AdminProductForm() {
   const onPickVideo = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (Number(file?.size || 0) > MAX_VIDEO_BYTES) {
+      setError('Max video size is 10 MB.')
+      e.target.value = ''
+      return
+    }
     setUploadingVideo(true)
     setError('')
     try {
