@@ -14,8 +14,8 @@
       "handle": "filesystem"
     },
     {
-      "src": "/products(?:/.*)?$",
-      "dest": "/api/seo-product.cjs"
+      "src": "^/products(/.*)?$",
+      "dest": "/api/seo-product"
     },
     {
       "src": "/.*",

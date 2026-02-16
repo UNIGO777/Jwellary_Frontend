@@ -82,7 +82,7 @@ const upsertJsonLd = (html, json) => {
   return html.replace(/<\/head>/i, `${next}</head>`)
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     const proto = String(req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim() || 'https'
     const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim()
@@ -108,7 +108,8 @@ module.exports = async (req, res) => {
       return
     }
 
-    const apiBaseUrl = process.env.VITE_API_URL || process.env.API_BASE_URL || 'https://api.omabhushan.com'
+    const env = globalThis?.process?.env || {}
+    const apiBaseUrl = env.VITE_API_URL || env.API_BASE_URL || 'https://api.omabhushan.com'
     const productRes = await fetch(`${String(apiBaseUrl).replace(/\/+$/, '')}/api/products/${productId}`, {
       headers: {
         Accept: 'application/json'
@@ -180,10 +181,9 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=86400')
     res.statusCode = 200
     res.end(html)
-  } catch (err) {
+  } catch {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.end('<!doctype html><html><head><meta charset="utf-8"><title>OM ABHUSAN JWELLARY</title></head><body></body></html>')
   }
 }
-
