@@ -6,7 +6,7 @@ const joinUrl = (baseUrl, path) => {
   return `${base}${p}`
 }
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5660'
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'https://api.omabhushan.com'
 
 export const resolveAssetUrl = (value) => {
   const raw = String(value || '').trim()

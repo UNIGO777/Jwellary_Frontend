@@ -73,19 +73,19 @@ export default function AdminLogin() {
   const primaryDisabled = busy || !email || (isVerify ? !otp : !password)
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto grid w-full grid-cols-1 gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:items-stretch lg:gap-10 lg:px-8">
+    <div className="min-h-screen bg-zinc-50 py-5">
+      <div className="mx-auto grid min-h-[95vh] w-full grid-cols-1 gap-6 px-4 py-0 sm:px-6 lg:grid-cols-2 lg:items-stretch lg:gap-10 lg:px-8">
         <MotionDiv
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"
+          className="relative h-full overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"
         >
           <video className="absolute inset-0 h-full w-full object-cover" src={VIDEO_URL} autoPlay muted loop playsInline preload="metadata" />
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-700/70 via-violet-700/35 to-indigo-950/70" />
+          
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
-          <div className="relative flex h-full min-h-[320px] flex-col justify-between p-8 text-white lg:min-h-[620px]">
+          <div className="relative flex h-full flex-col justify-between p-8 text-white">
             <div className="flex items-center justify-between gap-4">
               <div className="text-sm font-semibold tracking-wide text-white/95">OM ABHUSAN JWELLARY</div>
               <div className="rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur">Admin Panel</div>
@@ -116,7 +116,7 @@ export default function AdminLogin() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm"
+          className="flex h-full flex-col justify-center rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm"
         >
           <div className="text-3xl font-semibold tracking-tight text-zinc-900">Admin login</div>
           <div className="mt-2 text-sm text-zinc-600">{isVerify ? 'Enter the OTP sent to admin email' : 'Please enter your details to continue'}</div>
