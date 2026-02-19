@@ -108,7 +108,7 @@ export default function Cart() {
     }, 0)
   }, [lines])
 
-  const gstEstimate = useMemo(() => Math.round(subtotal * 0.18), [subtotal])
+  const gstEstimate = useMemo(() => Math.round(subtotal * 0.03), [subtotal])
   const totalEstimate = useMemo(() => subtotal + gstEstimate, [subtotal, gstEstimate])
 
   const outOfStockCount = useMemo(() => lines.filter((l) => !l.product.inStock).length, [lines])
@@ -352,7 +352,7 @@ export default function Cart() {
                       <span className="text-lg font-semibold text-zinc-900">{formatInr(subtotal)}</span>
                     </div>
                     <div className="flex items-center justify-between text-zinc-700">
-                      <span>GST (18%)</span>
+                      <span>GST (3%)</span>
                       <span className="font-semibold text-zinc-900">{formatInr(gstEstimate)}</span>
                     </div>
                     <div className="flex items-center justify-between">

@@ -123,7 +123,7 @@ export default function Checkout() {
   const promoDiscount = useMemo(() => Number(promoData?.discount || 0), [promoData])
   const discountedSubtotal = useMemo(() => Math.max(0, subtotal - promoDiscount), [subtotal, promoDiscount])
 
-  const gst = useMemo(() => Math.round(discountedSubtotal * 0.18), [discountedSubtotal])
+  const gst = useMemo(() => Math.round(discountedSubtotal * 0.03), [discountedSubtotal])
   const total = useMemo(() => discountedSubtotal + gst, [discountedSubtotal, gst])
 
   const outOfStockCount = useMemo(() => lines.filter((l) => !l.product.inStock).length, [lines])
@@ -605,7 +605,7 @@ export default function Checkout() {
                       <span className="font-semibold text-zinc-900">{formatInr(0)}</span>
                     </div>
                     <div className="flex items-center justify-between text-zinc-700">
-                      <span>GST (18%)</span>
+                      <span>GST (3%)</span>
                       <span className="font-semibold text-zinc-900">{formatInr(gst)}</span>
                     </div>
                     <div className="h-px bg-zinc-200" />
@@ -656,9 +656,7 @@ export default function Checkout() {
                     {placingOrder ? 'Processing...' : 'Place order'}
                   </button>
 
-                  <div className="mt-4 text-xs text-zinc-500">
-                    GST is added at 18% on the subtotal. Delivery is free.
-                  </div>
+                  <div className="mt-4 text-xs text-zinc-500">GST is added at 3% on the subtotal. Delivery is free.</div>
                 </div>
 
                 <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-5 sm:p-6">

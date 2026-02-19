@@ -7,6 +7,7 @@ import PageLoader from '../components/PageLoader.jsx'
 import ProductCard from '../components/ProductCard.jsx'
 
 const MotionDiv = motion.div
+const MotionButton = motion.button
 
 const cn = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -618,9 +619,11 @@ export default function Product() {
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <button
+                  <MotionButton
                     type="button"
                     disabled={disableBuy}
+                    whileTap={disableBuy ? undefined : { scale: 0.97 }}
+                    transition={{ duration: 0.08 }}
                     onClick={async () => {
                       if (disableBuy) return
                       try {
@@ -633,12 +636,12 @@ export default function Product() {
                       }
                     }}
                     className={cn(
-                      'rounded-2xl px-4 py-3 text-sm font-semibold transition',
+                      'rounded-2xl px-4 py-3 text-sm font-semibold transition will-change-transform active:scale-[0.98]',
                       disableBuy ? 'cursor-not-allowed bg-zinc-200 text-zinc-500' : 'bg-zinc-900 text-white hover:bg-zinc-950'
                     )}
                   >
                     Add to cart
-                  </button>
+                  </MotionButton>
                   <button
                     type="button"
                     disabled={disableBuy}

@@ -56,6 +56,12 @@ export default function Footer() {
             <Link to="/privacy" className="hover:text-white">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-white">Terms of Service</Link>
           </div>
+          <div>
+            Designed and developed by{' '}
+            <a href="https://www.ewithmarketing.com" target="_blank" rel="noreferrer" className="text-white/60 hover:text-white">
+              Ewiths
+            </a>
+          </div>
         </div>
       </div>
     </footer>
