@@ -12,8 +12,22 @@ export default function Footer() {
             </p>
             <div className="mt-6">
               <div className="flex gap-4">
-                <a href="#" className="text-sm hover:text-white">Instagram</a>
-                <a href="#" className="text-sm hover:text-white">Facebook</a>
+                <a
+                  href="https://www.instagram.com/om_abhushan"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm hover:text-white"
+                >
+                  Instagram
+                </a>
+                <a
+                  href="https://www.facebook.com/om.abhushan"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm hover:text-white"
+                >
+                  Facebook
+                </a>
                 <a href="#" className="text-sm hover:text-white">Pinterest</a>
               </div>
             </div>
