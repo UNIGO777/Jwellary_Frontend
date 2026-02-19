@@ -16,6 +16,8 @@ import Contact from './pages/Contact.jsx'
 import Shipping from './pages/Shipping.jsx'
 import Faq from './pages/Faq.jsx'
 import Care from './pages/Care.jsx'
+import Privacy from './pages/Privacy.jsx'
+import Terms from './pages/Terms.jsx'
 import NotFound from './pages/NotFound.jsx'
 import AdminRoutes from './admin/index.jsx'
 import Footer from './components/Footer.jsx'
@@ -72,6 +74,8 @@ function App() {
           <Route path="/shipping" element={<Shipping />} />
           <Route path="/faq" element={<Faq />} />
           <Route path="/care" element={<Care />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
