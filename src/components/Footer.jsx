@@ -31,6 +31,13 @@ export default function Footer() {
                 <a href="#" className="text-sm hover:text-white">Pinterest</a>
               </div>
             </div>
+            <div className="mt-6 space-y-2 text-sm text-white/70">
+              <p>Phone: 9424868853</p>
+              <p>
+                650 Purani Charhai Jawaharganj Bada Fuhara Garhafatak Road Jabalpur Mp
+              </p>
+              <p>Pin - 482001</p>
+            </div>
           </div>
 
           <div>
