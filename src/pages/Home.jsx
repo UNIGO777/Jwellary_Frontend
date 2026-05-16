@@ -88,22 +88,22 @@ export default function Home() {
               <span className="h-1 w-1 rounded-full bg-white/70" aria-hidden="true" />
               Est. 2024
             </div>
-            <h1 className="mt-6 font-serif text-6xl font-medium leading-none tracking-tight drop-shadow-sm sm:text-8xl md:text-9xl">OM ABHUSAN</h1>
+            <h1 className="mt-6 font-serif text-6xl font-medium leading-none tracking-tight drop-shadow-sm sm:text-8xl md:text-9xl">OM ABHUSHAN</h1>
             <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/80 sm:text-lg">
-              Everyday elegance, crafted to last. Explore curated designs for modern moments.
+                  Everyday elegance crafted to last. Explore curated designs for modern moments.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 to="/products"
                 className="inline-flex h-11 w-full items-center justify-center bg-white px-6 text-sm font-semibold text-[#2b2118] transition hover:bg-white/90 sm:w-auto"
               >
-                Shop collection
+                Shop Collection
               </Link>
               <Link
                 to="/about"
                 className="inline-flex h-11 w-full items-center justify-center border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 sm:w-auto"
               >
-                Our story
+                Our Story
               </Link>
             </div>
           </MotionDiv>
@@ -195,7 +195,7 @@ export default function Home() {
               <h2 className="mt-3 font-serif text-3xl leading-tight text-zinc-900 sm:text-4xl md:text-5xl">Bestsellers</h2>
             </div>
             <div className="max-w-sm text-sm leading-relaxed text-zinc-600">
-              Pieces loved by you. Discover the favorites that have found their way into collections around the world.
+              Pieces loved by you. Discover the favourites that have found their way into collections around the world.
               <div className="mt-4">
                 <Link
                   to="/bestsellers"

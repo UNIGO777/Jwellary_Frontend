@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="mx-auto  ">
         <div className="grid grid-cols-2 gap-10 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-2">
-            <h2 className="text-lg font-bold uppercase tracking-widest">OM ABHUSAN</h2>
+            <h2 className="text-lg font-bold uppercase tracking-widest">OM ABHUSHAN</h2>
             <p className="mt-4 max-w-xs text-sm leading-6 text-white/70">
               Handcrafted jewellery designed for the modern soul. Born from a passion for detail and a love for the unique.
             </p>
@@ -34,7 +34,7 @@ export default function Footer() {
             <div className="mt-6 space-y-2 text-sm text-white/70">
               <p>Phone: 9424868853</p>
               <p>
-                650 Purani Charhai Jawaharganj Bada Fuhara Garhafatak Road Jabalpur Mp
+                650 Purani Charhai Jawaharganj Bada Fuhara Garhafatak Road Jabalpur MP
               </p>
               <p>Pin - 482001</p>
             </div>
